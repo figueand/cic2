@@ -96,6 +96,10 @@ const EV = (() => {
       const s = S.done[el.dataset.key];
       if (s) { el.classList.add('done'); el.querySelector('.st').textContent = '⭐'.repeat(s) + '☆'.repeat(3 - s); el.querySelector('.n').textContent = '✓'; }
     });
+    const nx = [...document.querySelectorAll('[data-key]')].find(el => !S.done[el.dataset.key]);
+    if (nx) { nx.classList.add('next'); const b = document.createElement('span'); b.className = 'tag'; b.textContent = '¡Seguí acá!'; nx.append(b); }
+    const pl = document.getElementById('plabel'), bi = document.querySelector('.bar i');
+    if (pl && bi) { let k = 0; for (let i = 1; i <= 10; i++) if (S.done['n' + bi.dataset.level + 'c' + i]) k++; pl.textContent = k === 10 ? '🏆 ¡Completaste todo!' : k + '/10 misiones'; }
     const bar = document.querySelector('.bar i');
     if (bar) { const l = bar.dataset.level; let n = 0; for (let i = 1; i <= 10; i++) if (S.done['n' + l + 'c' + i]) n++; bar.style.width = n * 10 + '%'; }
     const tb = document.getElementById('topbar'); if (tb) tb.replaceWith(Object.assign(topbar(tb.dataset.back, tb.dataset.text), { id: 'topbar' }));

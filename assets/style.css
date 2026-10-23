@@ -195,3 +195,18 @@ canvas.draw{width:100%;background:#fff;border-radius:var(--radius);box-shadow:va
 @media print{.inst,.top,.btn,footer,.next,.mascot,.dots{display:none!important}body{background:#fff}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:520px){.lvl{flex-wrap:wrap;gap:10px;padding:18px}.lvl .em{font-size:2.6rem}.lvl .prog{margin-left:0}}
+
+/* selector de clases */
+.lhead{display:flex;align-items:center;gap:16px;margin:18px 0 8px}.lhead .lem{font-size:3.4rem}.lhead h1{margin:0}.lhead .sub{margin:2px 0 0}
+.prow{display:flex;align-items:center;gap:12px}.prow .bar{flex:1;margin:12px 0}.plabel{font-weight:700;white-space:nowrap}
+.path{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.station{position:relative;min-height:96px;padding:14px 16px}
+.station .tx{flex:1;min-width:0}.station em{display:block;font-style:normal;font-size:.88rem;color:var(--muted);margin:3px 0 4px;line-height:1.3}
+.station .go{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--c2);font-size:.8rem}
+.station:hover .go{background:var(--c1);color:#fff}
+.station.done{background:linear-gradient(0deg,rgba(34,197,94,.1),rgba(34,197,94,.1)),var(--card)}
+.station.next{border-color:var(--c1);animation:pulse 2s ease-in-out infinite}
+.station .tag{position:absolute;top:-11px;right:14px;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;font-size:.75rem;font-weight:700;padding:3px 12px;border-radius:99px}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(99,102,241,.18)}}
+body.n1 .station{min-height:112px}body.n1 .station b{font-size:1.15rem}body.n1 .station .n{width:60px;height:60px;font-size:1.6rem}
+@media (max-width:520px){.path{grid-template-columns:1fr}.lhead .lem{font-size:2.6rem}}
