@@ -98,6 +98,10 @@ const EV = (() => {
     });
     const nx = [...document.querySelectorAll('[data-key]')].find(el => !S.done[el.dataset.key]);
     if (nx) { nx.classList.add('next'); const b = document.createElement('span'); b.className = 'tag'; b.textContent = '¡Seguí acá!'; nx.append(b); }
+    const rk = document.getElementById('rank');
+    if (rk) { let t = 0, k = 0; for (let i = 1; i <= 10; i++) { const s = S.done['n2c' + i] || 0; t += s; if (s) k++; } rk.textContent = (t >= 24 ? '🏅 Maestro Digital' : t >= 10 ? '🧭 Explorador' : '🐣 Aprendiz') + ' · ' + t + ' ⭐ de 30';
+      const bt = document.getElementById('bit'), n = nx ? nx.dataset.key.replace('n2c', '') : '';
+      if (bt) bt.innerHTML = '<b>Bit:</b> ' + (k === 0 ? '¡Hola! Soy Bit. Empecemos la misión 1.' : k === 10 ? '¡Completaste todas las misiones! Sos un/a gran explorador/a.' : '¡Vas genial, ' + (S.name || 'explorador/a') + '! Seguimos con la misión ' + n + '.'); }
     const pl = document.getElementById('plabel'), bi = document.querySelector('.bar i');
     if (pl && bi) { let k = 0; for (let i = 1; i <= 10; i++) if (S.done['n' + bi.dataset.level + 'c' + i]) k++; pl.textContent = k === 10 ? '🏆 ¡Completaste todo!' : k + '/10 misiones'; }
     const bar = document.querySelector('.bar i');

@@ -210,3 +210,13 @@ canvas.draw{width:100%;background:#fff;border-radius:var(--radius);box-shadow:va
 @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(99,102,241,.18)}}
 body.n1 .station{min-height:112px}body.n1 .station b{font-size:1.15rem}body.n1 .station .n{width:60px;height:60px;font-size:1.6rem}
 @media (max-width:520px){.path{grid-template-columns:1fr}.lhead .lem{font-size:2.6rem}}
+
+/* nivel 2: aventura / cómic */
+body.n2{background:radial-gradient(#bbf7d0 1.4px,transparent 1.6px) 0 0/18px 18px,var(--bg)}
+body.n2 .station{border:3px solid #14532d;box-shadow:5px 5px 0 #14532d;border-radius:14px}
+body.n2 .station:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 #14532d}
+body.n2 .station .n{border-radius:12px;transform:rotate(-6deg)}
+body.n2 .station.done{box-shadow:5px 5px 0 #15803d}
+body.n2 .bubble{border:3px solid #14532d;background:#fff}
+.rank{display:inline-block;background:#fde047;color:#422006;border:3px solid #422006;border-radius:99px;padding:4px 16px;font-weight:800;margin:4px 0 6px;box-shadow:3px 3px 0 #422006}
+.bitbox{margin:8px 0}
