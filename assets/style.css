@@ -601,3 +601,5 @@ input.pcolor{width:42px;height:38px;border:none;background:none;padding:0;cursor
 .pstatus{text-align:center;font-weight:600;margin-top:8px;min-height:1.4em}
 .printsheet{display:none}
 @media print{body.printing>*:not(.printsheet){display:none!important}body.printing .printsheet{display:block;text-align:center}.printsheet img{max-width:100%;max-height:88vh;border:2px solid #000}}
+
+.lvl.l4{background:linear-gradient(135deg,#e53935,#f9a825)}
