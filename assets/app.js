@@ -361,7 +361,7 @@ const EV = (() => {
         if (m) app.append(h('a.resume', { href: ROOT + `nivel${m[1]}/clase${m[2]}.html` }, h('span', {}, '▶️'), h('span', {}, h('b', {}, 'Continuar donde quedaron'), h('small', {}, `${LV(m[1]).emoji} Nivel ${m[1]} · Clase ${m[2]}: ${clsMeta(m[1], +m[2]).t.replace(/^\S+\s/, '')} (paso ${r.step + 1})`))));
       }
       const levels = h('div.levels');
-      [teamLevel(t)].forEach(l => {
+      [1, 2, 3].forEach(l => { /* el equipo puede entrar a cualquier nivel con la contraseña de ese nivel, haya terminado o no el anterior */
         const open = levelOpen(t, l), n = doneIn(t, l), L = LV(l);
         const el = h('a.lvl.l' + l + (open ? '' : '.locked'), { href: open ? lvlUrl(l) : '#' },
           h('span.em', {}, open ? L.emoji : '🔒'),
