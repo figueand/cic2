@@ -1,4 +1,4 @@
-/* Escuela de Verano Tecnológica · motor interactivo v7 (sin dependencias)
+/* Escuela de Verano Tecnológica · motor interactivo v8 (sin dependencias)
    Equipos de 1 o 2 personas · candados con contraseña · guardado automático · panel docente */
 const EV = (() => {
   'use strict';
@@ -36,11 +36,11 @@ const EV = (() => {
   function newTeam(o) {
     return {
       id: uid(), name: o.name || o.players.map(p => p.name).join(' y '), mode: o.mode, players: o.players,
-      created: Date.now(), last: Date.now(), done: {}, unlocked: {}, stats: [{ ok: 0, err: 0 }, { ok: 0, err: 0 }], badges: {}, resume: null
+      lv: o.lv || 1, created: Date.now(), last: Date.now(), done: {}, unlocked: {}, stats: [{ ok: 0, err: 0 }, { ok: 0, err: 0 }], badges: {}, resume: null
     };
   }
   function load() {
-    const d = { v: 4, sound: true, active: null, teams: {} };
+    const d = { v: 4, sound: true, active: null, teams: {}, lvOpen: {} };
     try { localStorage.setItem('ev_test', '1'); localStorage.removeItem('ev_test'); } catch (e) { storageOK = false; }
     try {
       const r = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -68,9 +68,27 @@ const EV = (() => {
   const doneIn = (t, l) => { let n = 0; for (let i = 1; i <= 10; i++) if (t.done[keyOf(l, i)]) n++; return n; };
   const starsIn = (t, l) => { let n = 0; for (let i = 1; i <= 10; i++) n += t.done[keyOf(l, i)] || 0; return n; };
   const totalStars = t => t ? Object.values(t.done).reduce((a, b) => a + b, 0) : 0;
-  const levelOpen = (t, l) => l === 1 || !!t.unlocked['L' + l];
-  const classOpen = (t, l, n) => levelOpen(t, l) && (n === 1 || !!t.unlocked[keyOf(l, n)]);
+  const OPEN = !!CFG.noLocks; /* config.js: noLocks:true abre todos los candados (modo navegación libre) */
+  const levelOpen = (t, l) => OPEN || l === 1 || !!(S.lvOpen && S.lvOpen[l]) || !!t.unlocked['L' + l];
+  /* cada equipo pertenece a un nivel (t.lv). Los equipos viejos sin ese campo se ubican en el nivel más alto donde tienen progreso */
+  const teamLevel = t => { if (t.lv) return t.lv; for (let l = 3; l >= 1; l--) for (let i = 1; i <= 10; i++) if (t.done[keyOf(l, i)]) return l; return 1; };
+  /* para VER los equipos de un nivel (2 y 3) hay que poner la contraseña del nivel en esta sesión del navegador */
+  const gateMem = {};
+  const gateOK = l => { if (OPEN || l === 1) return true; try { return sessionStorage.getItem('ev_gate' + l) === '1' || !!gateMem[l]; } catch (e) { return !!gateMem[l]; } };
+  const gateSet = l => { gateMem[l] = true; try { sessionStorage.setItem('ev_gate' + l, '1'); } catch (e) {} };
+  const classOpen = (t, l, n) => OPEN || (levelOpen(t, l) && (n === 1 || !!t.unlocked[keyOf(l, n)]));
   const rankOf = t => { const s = totalStars(t); return s >= 60 ? '🏅 Maestro Digital' : s >= 30 ? '🕵️ Detective' : s >= 10 ? '🧭 Explorador' : '🐣 Aprendiz'; };
+  const xpMap = t => t.xpBy || (t.xpBy = {});
+  const xpOf = t => Object.values(xpMap(t)).reduce((a, b) => a + b, 0);
+  const XPR = [[0, '🥚 Novato'], [100, '⚡ Aprendiz'], [250, '🦸 Héroe'], [450, '🌟 Superhéroe'], [700, '👑 Leyenda']];
+  const xpRank = x => XPR.filter(k => x >= k[0]).pop();
+  const xpNext = x => XPR.find(k => k[0] > x);
+  /* Nivel 3: puntos de misión (PM) y rangos de cyber-agente. Se guardan aparte en t.mpBy (valor por defecto = {}) */
+  const mpMap = t => t.mpBy || (t.mpBy = {});
+  const mpOf = t => Object.values(mpMap(t)).reduce((a, b) => a + b, 0);
+  const MPR = [[0, '🔰 Recluta'], [150, '🎖️ Agente'], [330, '🕵️ Detective'], [560, '🔍 Inspector'], [800, '🧠 Maestro Cyber']];
+  const mpRank = x => MPR.filter(k => x >= k[0]).pop();
+  const mpNext = x => MPR.find(k => k[0] > x);
   const avatarsOf = t => t.players.map(p => p.avatar).join(' ');
   const namesOf = t => t.players.map(p => p.name).join(' y ');
   const goto = u => { location.href = u; };
@@ -80,6 +98,8 @@ const EV = (() => {
     { id: 'first', e: '🌱', t: 'Primera misión', d: 'Completaron su primera clase' },
     { id: 'perfect', e: '💎', t: 'Sin errores', d: 'Una clase con 3 estrellas' },
     { id: 'key', e: '🗝️', t: 'Llavero', d: 'Abrieron algo con la contraseña' },
+    { id: 'hero', e: '🦸', t: 'Súper clave', d: 'Crearon su superhéroe y su clave secreta' },
+    { id: 'combo', e: '🔥', t: 'Combo x5', d: 'Cinco aciertos seguidos' },
     { id: 'duo', e: '🤝', t: 'Dúo dinámico', d: 'En pareja, los dos sumaron aciertos' },
     { id: 'back', e: '🔁', t: 'Nunca me rindo', d: 'Retomaron una clase guardada y la terminaron' },
     { id: 's10', e: '⭐', t: '10 estrellas', d: 'Juntaron 10 estrellas' },
@@ -87,7 +107,11 @@ const EV = (() => {
     { id: 's60', e: '🌠', t: '60 estrellas', d: 'Juntaron 60 estrellas' },
     { id: 'lv1', e: '🟣', t: 'Nivel 1 completo', d: 'Terminaron las 10 clases del Nivel 1' },
     { id: 'lv2', e: '🟢', t: 'Nivel 2 completo', d: 'Terminaron las 10 clases del Nivel 2' },
-    { id: 'lv3', e: '🔵', t: 'Nivel 3 completo', d: 'Terminaron las 10 clases del Nivel 3' }
+    { id: 'lv3', e: '🔵', t: 'Nivel 3 completo', d: 'Terminaron las 10 clases del Nivel 3' },
+    { id: 'ghost', e: '👻', t: 'Agente fantasma', d: 'Nivel 3: una misión sin errores y sin pistas' },
+    { id: 'agente', e: '🎖️', t: 'Rango: Agente', d: 'Nivel 3: llegaron a Agente (150 PM)' },
+    { id: 'inspector', e: '🔍', t: 'Rango: Inspector', d: 'Nivel 3: llegaron a Inspector (560 PM)' },
+    { id: 'maestro', e: '🧠', t: 'Maestro Cyber', d: 'Nivel 3: llegaron al rango máximo (800 PM)' }
   ];
   function award(t, ids) {
     const fresh = [];
@@ -211,12 +235,12 @@ const EV = (() => {
     });
   }
   function openLevelLock(t, l, onOk) {
-    const prev = doneIn(t, l - 1) === 10;
+    /* cada nivel es para un grupo distinto: la contraseña del nivel lo abre sin exigir haber terminado el anterior */
     lockModal({
       title: `${LV(l).emoji} Nivel ${l}: ${LV(l).name}`, speakOk: false,
-      msg: prev ? 'Pídele a tu profe la contraseña secreta para abrir este nivel. 👩‍🏫' : `Primero terminen las 10 clases del Nivel ${l - 1}. Después tu profe te da la contraseña.`,
-      verify: verifier(CFG.passwords['L' + l], prev, `Primero terminen las 10 clases del Nivel ${l - 1}.`),
-      onOk: r => { t.unlocked['L' + l] = true; const f = award(t, ['key']); save(); f.forEach(b => toast(b.e, '¡Insignia: ' + b.t + '!', b.d)); (onOk || (() => goto(lvlUrl(l))))(r); }
+      msg: 'Pídele a tu profe la contraseña secreta para abrir este nivel. 👩‍🏫',
+      verify: verifier(CFG.passwords['L' + l], true, ''),
+      onOk: r => { (S.lvOpen || (S.lvOpen = {}))[l] = true; gateSet(l); let f = []; if (t) { t.unlocked['L' + l] = true; f = award(t, ['key']); } save(); f.forEach(b => toast(b.e, '¡Insignia: ' + b.t + '!', b.d)); (onOk || (() => goto(lvlUrl(l))))(r); }
     });
   }
 
@@ -255,28 +279,45 @@ const EV = (() => {
      ============================================================ */
   function portal() {
     const app = document.getElementById('app');
-    let view = Object.keys(S.teams).length ? 'teams' : 'new';
+    let view = 'levels', lvSel = 1;
     const f = { mode: 2, p: [{ name: '', avatar: '🦊' }, { name: '', avatar: '🐼' }], tname: '' };
     const hero = (sub) => h('div.hero', {}, h('div.logo', {}, '🚀'), h('h1', {}, 'Escuela de Verano Tecnológica'), h('p.sub', {}, sub));
     const miniProg = t => h('span.mini', {}, [1, 2, 3].map(l => h('span', {}, LV(l).emoji + ' ' + doneIn(t, l) + '/10')));
 
-    function render() { app.innerHTML = ''; ({ teams: vTeams, new: vNew, home: vHome })[view](); window.scrollTo(0, 0); }
+    function render() { app.innerHTML = ''; ({ levels: vLevels, teams: vTeams, new: vNew, home: vHome })[view](); window.scrollTo(0, 0); }
+
+    const teamsOf = l => Object.values(S.teams).filter(t => teamLevel(t) === l);
+    function vLevels() {
+      app.append(topbar(null), hero('¡Bienvenidos! Elijan su nivel para ver sus equipos.'));
+      const levels = h('div.levels');
+      [1, 2, 3].forEach(l => {
+        const L = LV(l), ok = gateOK(l);
+        const el = h('a.lvl.l' + l + (ok ? '' : '.locked'), { href: '#' },
+          h('span.em', {}, ok ? L.emoji : '🔒'),
+          h('span', {}, h('b', {}, `Nivel ${l}: ${L.name} (${L.age})`), h('small', {}, ok ? L.desc : 'Se abre con la contraseña de tu profe. 🔑')),
+          h('span.prog', {}, ok ? 'Entrar ▶' : '🔑'));
+        el.onclick = e => { e.preventDefault(); const go = () => { lvSel = l; view = teamsOf(l).length ? 'teams' : 'new'; render(); }; ok ? go() : openLevelLock(null, l, go); };
+        levels.append(el);
+      });
+      app.append(levels, h('div.linksrow', {}, h('button.linkbtn', { on: { click: backupModal } }, '💾 Respaldo'), h('a.linkbtn', { href: 'docente.html' }, '🔧 Docentes')));
+      if (!storageOK) app.append(h('p.warn', {}, '⚠️ Este navegador no permite guardar el progreso. Salgan de la ventana privada o usen el respaldo.'));
+    }
 
     function vTeams() {
-      app.append(topbar(null), hero('¿Quién juega hoy? Elijan su equipo para seguir donde quedaron.'));
-      const list = Object.values(S.teams).sort((a, b) => (b.id === S.active) - (a.id === S.active) || (b.last || 0) - (a.last || 0));
+      app.append(topbar(null), hero(`${LV(lvSel).emoji} Nivel ${lvSel}: ¿Quién juega hoy? Elijan su equipo para seguir donde quedaron.`));
+      const list = teamsOf(lvSel).sort((a, b) => (b.id === S.active) - (a.id === S.active) || (b.last || 0) - (a.last || 0));
       const grid = h('div.teams');
-      list.forEach(t => grid.append(h('button.team' + (t.id === S.active ? '.lastone' : ''), { on: { click: () => { S.active = t.id; t.last = Date.now(); save(true); view = 'home'; render(); } } },
+      list.forEach(t => grid.append(h('button.team' + (t.id === S.active ? '.lastone' : ''), { on: { click: () => { S.active = t.id; t.last = Date.now(); save(true); lvSel = teamLevel(t); view = 'home'; render(); } } },
         h('span.tav', {}, avatarsOf(t)),
         h('span.tn', {}, h('b', {}, t.name), h('small', {}, (t.mode === 2 ? '👥 Pareja' : '🙂 Solo/a') + ' · ⭐ ' + totalStars(t) + ' · ' + rankOf(t)), miniProg(t)),
         t.id === S.active ? h('span.tag', {}, 'Última vez') : null)));
-      app.append(grid, h('div', { style: 'text-align:center;margin-top:18px' }, h('button.btn.big', { on: { click: () => { view = 'new'; render(); } } }, '➕ Equipo nuevo')));
+      app.append(grid, h('div', { style: 'text-align:center;margin-top:18px' }, h('button.btn.big', { on: { click: () => { view = 'new'; render(); } } }, '➕ Equipo nuevo'), ' ', h('button.btn.ghost', { on: { click: () => { view = 'levels'; render(); } } }, '← Cambiar de nivel')));
       app.append(h('div.linksrow', {}, h('button.linkbtn', { on: { click: backupModal } }, '💾 Respaldo'), h('a.linkbtn', { href: 'docente.html' }, '🔧 Docentes')));
       if (!storageOK) app.append(h('p.warn', {}, '⚠️ Este navegador no permite guardar el progreso. Salgan de la ventana privada o usen el respaldo.'));
     }
 
     function vNew() {
-      app.append(topbar(null), hero('¡Hola! Armen su equipo. Pueden jugar solos o de a dos en la misma compu.'));
+      app.append(topbar(null), hero(`${LV(lvSel).emoji} Nivel ${lvSel}: ¡Hola! Armen su equipo. Pueden jugar solos o de a dos en la misma compu.`));
       const card = h('div.card.newteam');
       const modeRow = h('div.modes', {}, [[1, '🙂', 'Juego solo/a'], [2, '👥', 'Somos dos (pareja)']].map(([m, e, t]) =>
         h('button.mode' + (f.mode === m ? '.sel' : ''), { on: { click: () => { f.mode = m; render(); } } }, h('span.e', {}, e), t)));
@@ -299,31 +340,32 @@ const EV = (() => {
         const ps = f.p.slice(0, f.mode).map(p => ({ name: p.name.trim(), avatar: p.avatar }));
         if (ps.some(p => !p.name)) { err.textContent = '✏️ Escriban el nombre de todos los jugadores.'; return; }
         if (f.mode === 2 && norm(ps[0].name) === norm(ps[1].name)) { err.textContent = '👀 Los nombres tienen que ser distintos.'; return; }
-        const t = newTeam({ mode: f.mode, players: ps });
+        const t = newTeam({ mode: f.mode, players: ps, lv: lvSel });
         S.teams[t.id] = t; S.active = t.id; save(); chime('badge'); confetti(20); view = 'home'; render();
       };
       card.append(err, h('div', { style: 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px' }, create,
-        Object.keys(S.teams).length ? h('button.btn.ghost', { on: { click: () => { view = 'teams'; render(); } } }, '← Volver') : null));
+        h('button.btn.ghost', { on: { click: () => { view = teamsOf(lvSel).length ? 'teams' : 'levels'; render(); } } }, '← Volver')));
       app.append(card);
     }
 
     function vHome() {
-      const t = T(); if (!t) { view = 'teams'; return render(); }
+      const t = T(); if (!t) { view = 'levels'; return render(); }
       app.append(topbar(null));
       app.append(h('div.card.teamhead', {},
         h('div.tav.big', {}, avatarsOf(t)),
         h('div', { style: 'flex:1;min-width:180px' }, h('h1', {}, '¡Hola, ' + namesOf(t) + '!'), h('p.sub', {}, (t.mode === 2 ? '👥 Equipo de dos · ' : '') + rankOf(t) + ' · ⭐ ' + totalStars(t) + ' de 90')),
-        h('button.btn.ghost', { on: { click: () => { view = 'teams'; render(); } } }, '🔄 Cambiar de equipo')));
+        h('button.btn.ghost', { on: { click: () => { lvSel = teamLevel(t); view = 'teams'; render(); } } }, '🔄 Cambiar de equipo'),
+        h('button.btn.ghost', { on: { click: () => { view = 'levels'; render(); } } }, '🎚️ Cambiar de nivel')));
       if (t.resume) {
         const r = t.resume, m = /^n(\d)c(\d+)$/.exec(r.key);
         if (m) app.append(h('a.resume', { href: ROOT + `nivel${m[1]}/clase${m[2]}.html` }, h('span', {}, '▶️'), h('span', {}, h('b', {}, 'Continuar donde quedaron'), h('small', {}, `${LV(m[1]).emoji} Nivel ${m[1]} · Clase ${m[2]}: ${clsMeta(m[1], +m[2]).t.replace(/^\S+\s/, '')} (paso ${r.step + 1})`))));
       }
       const levels = h('div.levels');
-      [1, 2, 3].forEach(l => {
+      [teamLevel(t)].forEach(l => {
         const open = levelOpen(t, l), n = doneIn(t, l), L = LV(l);
         const el = h('a.lvl.l' + l + (open ? '' : '.locked'), { href: open ? lvlUrl(l) : '#' },
           h('span.em', {}, open ? L.emoji : '🔒'),
-          h('span', {}, h('b', {}, `Nivel ${l}: ${L.name} (${L.age})`), h('small', {}, open ? L.desc : (doneIn(t, l - 1) === 10 ? '¡Listos para subir! Pídanle la contraseña a su profe.' : `Se abre al terminar el Nivel ${l - 1} y con la contraseña de tu profe.`))),
+          h('span', {}, h('b', {}, `Nivel ${l}: ${L.name} (${L.age})`), h('small', {}, open ? L.desc : 'Se abre con la contraseña de tu profe. 🔑')),
           h('span.prog', {}, n + '/10 ⭐'));
         if (!open) el.onclick = e => { e.preventDefault(); openLevelLock(t, l); };
         levels.append(el);
@@ -357,17 +399,19 @@ const EV = (() => {
     const nxN = (() => { for (let i = 1; i <= 10; i++) if (classOpen(t, L, i) && !t.done[keyOf(L, i)]) return i; return 0; })();
     const n = doneIn(t, L), st = starsIn(t, L);
     app.append(topbar(ROOT + 'index.html', '← Inicio'));
-    app.append(h('div.lhead', {}, h('span.lem', {}, Lv.emoji), h('div', {}, h('h1', {}, `Nivel ${L}: ${Lv.name}`), h('p.sub', {}, `${Lv.age} · Elijan la misión de hoy:`))));
+    app.append(h('div.lhead', {}, h('span.lem', {}, Lv.emoji), h('div', {}, L === 3 ? h('p.termline', {}, '> agente@cic2:~$ ./misiones --nivel 3') : null, h('h1', {}, `Nivel ${L}: ${Lv.name}`), h('p.sub', {}, L === 3 ? `${Lv.age} · Elegí la misión de hoy` : `${Lv.age} · Elijan la misión de hoy:`))));
     const who = t.mode === 2 ? `${t.players[0].name} y ${t.players[1].name}` : t.players[0].name;
     const msg = n === 0 ? `¡Hola, ${who}! Soy ${Lv.mascot.name}. Empecemos la misión 1.` : n === 10 ? `¡Completaron todas las misiones, ${who}! Son un gran equipo.` : (t.resume && t.resume.key.startsWith('n' + L + 'c') ? `¡Bienvenidos de vuelta! Tienen una clase guardada: ¡sigamos!` : (nxN ? `¡Van genial, ${who}! Sigue la misión ${nxN}.` : `¡Van genial, ${who}! La próxima clase necesita la contraseña de tu profe. 🔑`));
     app.append(h('div.mascot.bitbox', {}, h('div.face', {}, Lv.mascot.emoji), h('div.bubble', {}, h('b', {}, Lv.mascot.name + ': '), msg)));
-    app.append(h('div.rank', {}, `${rankOf(t)} · ⭐ ${st} de 30 en este nivel`));
+    app.append(h('div.rank', {}, L === 3 ? `⭐ ${st} de 30 en este nivel` : `${rankOf(t)} · ⭐ ${st} de 30 en este nivel`));
+    if (L === 2) { const x = xpOf(t), nx = xpNext(x), r = xpRank(x); app.append(h('div.xpbar', {}, h('b', {}, `⚡ ${x} XP · ${r[1]}`), h('div.bar', {}, h('i', { style: `width:${nx ? Math.round((x - r[0]) / (nx[0] - r[0]) * 100) : 100}%` })), h('small', {}, nx ? `Faltan ${nx[0] - x} XP para ${nx[1]}` : '¡Rango máximo!'))); }
+    if (L === 3) { const x = mpOf(t), nx = mpNext(x), r = mpRank(x); app.append(h('div.xpbar.mpbar', {}, h('b', {}, `🎯 ${x} PM · ${r[1]}`), h('div.bar', {}, h('i', { style: `width:${nx ? Math.round((x - r[0]) / (nx[0] - r[0]) * 100) : 100}%` })), h('small', {}, nx ? `Faltan ${nx[0] - x} PM para ${nx[1]}` : '¡Rango máximo alcanzado!'))); }
     app.append(h('div.prow', {}, h('div.bar', {}, h('i', { style: `width:${n * 10}%` })), h('span.plabel', {}, n === 10 ? '🏆 ¡Completaste todo!' : n + '/10 misiones')));
     const path = h('div.path');
     for (let i = 1; i <= 10; i++) {
       const m = clsMeta(L, i), s = t.done[keyOf(L, i)] || 0, open = classOpen(t, L, i), isRes = t.resume && t.resume.key === keyOf(L, i);
       const el = h('a.station' + (s ? '.done' : '') + (open ? '' : '.locked') + (i === nxN ? '.next' : ''), { href: open ? `clase${i}.html` : '#' },
-        h('span.n', {}, s ? '✓' : open ? i : '🔒'),
+        h('span.n', {}, s ? '✓' : open ? (L === 3 ? String(i).padStart(2, '0') : i) : '🔒'),
         h('span.tx', {}, h('b', {}, m.t), h('em', {}, open ? m.d : 'Se abre con la contraseña de tu profe 🔑'), h('span.st', {}, s ? '⭐'.repeat(s) + '☆'.repeat(3 - s) : (open ? '☆☆☆' : ''))),
         h('span.go', {}, open ? '▶' : '🔑'),
         i === nxN ? h('span.tag', {}, isRes ? '¡Sigan acá! 💾' : '¡Sigan acá!') : null);
@@ -392,6 +436,13 @@ const EV = (() => {
     }
     let i = 0, mistakes = 0, hints = 0, elapsed = 0, resumed = false, cur = 0, running = false, timerIv = null, warned = false;
     let cs = [{ ok: 0, err: 0 }, { ok: 0, err: 0 }];
+    const XPON = L === 2 || L === 3, CY = L === 3; /* puntos: XP en Nivel 2, puntos de misión (PM) en Nivel 3 */
+    const PT = CY ? { map: mpMap, of: mpOf, rank: mpRank } : { map: xpMap, of: xpOf, rank: xpRank };
+    let xp = 0, combo = 0, bestCombo = 0; const pb = () => PT.map(t)[key] || 0;
+    const ptsNow = () => PT.of(t) - pb() + Math.max(pb(), xp);
+    const xpChip = h('span.chip.xpchip', {}, '');
+    const xpShow = () => { if (XPON) xpChip.textContent = CY ? '🎯 ' + ptsNow() + ' PM' : '⚡ ' + ptsNow() + ' XP'; };
+    const pop = txt => { const e = h('span.pow', {}, txt); document.body.append(e); setTimeout(() => e.remove(), 1100); };
     const startTurn = Object.keys(t.done).length % 2;
     const rs = t.resume && t.resume.key === key && t.resume.step > 0 ? t.resume : null;
 
@@ -414,9 +465,9 @@ const EV = (() => {
     function mood(good) { face.classList.remove('jump', 'wob'); void face.offsetWidth; face.classList.add(good ? 'jump' : 'wob'); }
 
     function say(txt) { lastSay = txt; bubble.innerHTML = ''; bubble.append(h('b', {}, cfg.mascot.name + ': '), txt, ' '); bubble.append(spk); if (cfg.voice) speak((pair ? 'Turno de ' + t.players[cur].name + '. ' : '') + txt); }
-    function feedback(txt, good) { fb.className = 'fb show ' + (good ? 'good' : 'bad'); fb.textContent = (good ? '🎉 ' : '💡 ') + txt; beep(good); mood(good); if (cfg.voice) speak(txt); }
-    function good(txt) { cs[cur].ok++; feedback(txt, true); }
-    function bad(txt) { mistakes++; cs[cur].err++; feedback(txt, false); }
+    function feedback(txt, good) { fb.className = 'fb show ' + (good ? 'good' : 'bad'); fb.textContent = (good ? (CY ? '✔ ' : '🎉 ') : (CY ? '⚠ ' : '💡 ')) + txt; beep(good); mood(good); if (cfg.voice) speak(txt); }
+    function good(txt) { cs[cur].ok++; feedback(txt, true); if (XPON) { combo++; bestCombo = Math.max(bestCombo, combo); const g = 10 + (combo >= 3 ? 5 : 0); xp += g; xpShow(); pop(CY ? (combo >= 3 ? `RACHA x${combo} · +${g} PM` : `+${g} PM`) : (combo >= 3 ? `¡COMBO x${combo}! +${g}` : `¡+${g} XP!`)); } }
+    function bad(txt) { mistakes++; cs[cur].err++; feedback(txt, false); combo = 0; }
     function complete() {
       nextWrap.innerHTML = '';
       const last = i === cfg.steps.length - 1;
@@ -424,10 +475,10 @@ const EV = (() => {
       hintBtn.style.visibility = 'hidden';
       nextWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-    const ctx = { say, good, bad, complete, pass, h, shuffle, cfg, onHint: null, q: txt => h('div.q', {}, h('button.spk', { 'aria-label': 'Escuchar', on: { click: () => speak(txt, true) } }, '🔊'), h('span', { html: txt })) };
+    const ctx = { say, good, bad, complete, pass, h, shuffle, cfg, mp: () => (CY ? ptsNow() : 0), extra: new Set(), onHint: null, q: txt => h('div.q', {}, h('button.spk', { 'aria-label': 'Escuchar', on: { click: () => speak(txt, true) } }, '🔊'), h('span', { html: txt })) };
 
     function saveResume(quiet) {
-      t.resume = { key, step: i, mistakes, hints, elapsed, cs, resumed: true, at: Date.now() }; t.last = Date.now(); save(!!quiet);
+      t.resume = { key, step: i, mistakes, hints, elapsed, cs, xp, combo, resumed: true, at: Date.now() }; t.last = Date.now(); save(!!quiet);
     }
     function show() {
       stage.innerHTML = ''; fb.className = 'fb'; nextWrap.innerHTML = ''; ctx.onHint = null; hintBtn.style.visibility = 'visible';
@@ -455,20 +506,24 @@ const EV = (() => {
     function finish() {
       clearInterval(timerIv); running = false;
       const s = stars();
+      let bonus = 0, oldR = null, newR = null;
+      if (XPON) { bonus = s * (CY ? 15 : 10); xp += bonus; oldR = PT.rank(PT.of(t)); PT.map(t)[key] = Math.max(pb(), xp); newR = PT.rank(PT.of(t)); xpShow(); }
       t.done[key] = Math.max(t.done[key] || 0, s);
       cs.forEach((x, k) => { t.stats[k].ok += x.ok; t.stats[k].err += x.err; });
       t.resume = null; t.last = Date.now();
-      const ids = ['first']; if (s === 3) ids.push('perfect'); if (resumed) ids.push('back');
+      const ids = ['first', ...ctx.extra]; if (bestCombo >= 5) ids.push('combo'); if (s === 3) ids.push('perfect'); if (resumed) ids.push('back');
       if (pair && cs[0].ok > 0 && cs[1].ok > 0) ids.push('duo');
       const tot = totalStars(t); [10, 30, 60].forEach(x => { if (tot >= x) ids.push('s' + x); });
+      if (CY) { if (mistakes === 0 && hints === 0) ids.push('ghost'); const mp = mpOf(t); if (mp >= 150) ids.push('agente'); if (mp >= 560) ids.push('inspector'); if (mp >= 800) ids.push('maestro'); }
       if (doneIn(t, L) === 10) ids.push('lv' + L);
       const fresh = award(t, ids); save();
       confetti(); beep(true);
+      if (XPON && newR !== oldR) setTimeout(() => (CY ? toast(newR[1].split(' ')[0], '¡Ascenso de rango!', newR[1], 4500) : toast('🦸', '¡Subieron de rango!', newR[1], 4500)), 300);
       if (fresh.length) setTimeout(() => { chime('badge'); fresh.forEach((b, k) => setTimeout(() => toast(b.e, '¡Insignia nueva: ' + b.t + '!', b.d, 4500), k * 700)); }, 600);
       stage.innerHTML = ''; fb.className = 'fb'; nextWrap.innerHTML = ''; hintBtn.style.visibility = 'hidden'; const sb = app.querySelector('.savebtn'); if (sb) sb.style.display = 'none';
       dots.querySelectorAll('i').forEach(d => d.className = 'on'); if (duo) duo.style.display = 'none';
       const who = pair ? `${t.players[0].name} y ${t.players[1].name}` : t.players[0].name;
-      say(`¡Misión cumplida, ${who}! Ganaron ${s} ${s > 1 ? 'estrellas' : 'estrella'}.`);
+      say(CY ? `Misión cumplida, ${who}. Ganaron ${s} ${s > 1 ? 'estrellas' : 'estrella'} y ${xp} puntos de misión.` : `¡Misión cumplida, ${who}! Ganaron ${s} ${s > 1 ? 'estrellas' : 'estrella'}.`);
 
       let nextLocked = false;
       const nextBtn = (() => {
@@ -480,9 +535,9 @@ const EV = (() => {
         h('button.btn.ghost.five', { on: { click: e => { e.currentTarget.textContent = '🙌 ¡Chocaron los cinco!'; confetti(30); chime('badge'); } } }, '🙌 ¡Chócala!')) : null;
       stage.append(h('div.card', { style: 'text-align:center' },
         h('div.starsrow', {}, '⭐'.repeat(s) + '☆'.repeat(3 - s)),
-        h('h1', {}, '¡Muy bien hecho! 🎉'), h('p.sub', {}, cfg.recap || ''), sum,
+        h('h1', {}, CY ? '✔ MISIÓN CUMPLIDA' : '¡Muy bien hecho! 🎉'), h('p.sub', {}, cfg.recap || ''), XPON ? h('div.xpsum', {}, h('b', {}, CY ? `🎯 +${xp} PM` : `⚡ +${xp} XP`), h('small', {}, `(${bonus} de bonus por estrellas)`), h('span', {}, newR[1])) : null, sum,
         fresh.length ? h('div.newbadges', {}, fresh.map(b => h('span.nb', {}, b.e + ' ' + b.t))) : null,
-        h('p.savedmsg', {}, '💾 Su progreso quedó guardado en esta compu.'),
+        h('p.savedmsg', {}, CY ? '💾 Progreso guardado en este dispositivo.' : '💾 Su progreso quedó guardado en esta compu.'),
         h('div', { style: 'display:grid;gap:14px;margin-top:18px;justify-items:center' },
           nextLocked ? h('p.sub', { style: 'font-size:.9rem' }, '🔑 Para seguir, tu profe les da la contraseña.') : null,
           nextBtn,
@@ -490,26 +545,27 @@ const EV = (() => {
           h('p.sub', { style: 'font-size:.85rem' }, 'Se abre en otra pestaña. Jueguen con la profe cerca 👩‍🏫'),
           h('div', { style: 'display:flex;gap:12px;flex-wrap:wrap;justify-content:center' },
             h('a.btn.ghost', { href: mapUrl }, '🗺️ Mapa de misiones'),
-            h('button.btn.ghost', { on: { click: () => { mistakes = 0; hints = 0; elapsed = 0; cs = [{ ok: 0, err: 0 }, { ok: 0, err: 0 }]; i = 0; resumed = false; if (duo) duo.style.display = ''; begin(); } } }, '🔁 Repetir')))));
+            h('button.btn.ghost', { on: { click: () => { mistakes = 0; hints = 0; elapsed = 0; cs = [{ ok: 0, err: 0 }, { ok: 0, err: 0 }]; i = 0; resumed = false; xp = 0; combo = 0; bestCombo = 0; if (duo) duo.style.display = ''; begin(); } } }, '🔁 Repetir')))));
     }
 
     function begin() {
       app.innerHTML = '';
-      app.append(topbar(null, null, timerChip), h('div.mascot', {}, face, bubble)); if (duo) app.append(duo); app.append(dots, h('div.card', {}, h('div.hintrow', {}, hintBtn, h('button.savebtn', { on: { click: () => { saveResume(); toast('💾', 'Guardado', 'Pueden seguir cuando quieran.', 2200); setTimeout(() => goto(mapUrl), 700); } } }, '💾 Guardar y salir')), stage, fb, nextWrap));
-      timerChip.textContent = '⏱️ ' + fmt(elapsed); clearInterval(timerIv); timerIv = setInterval(tick, 1000); running = true;
+      app.append(topbar(null, null, [XPON ? xpChip : null, timerChip]), h('div.mascot', {}, face, bubble)); if (duo) app.append(duo); app.append(dots, h('div.card', {}, h('div.hintrow', {}, hintBtn, h('button.savebtn', { on: { click: () => { saveResume(); toast('💾', 'Guardado', 'Pueden seguir cuando quieran.', 2200); setTimeout(() => goto(mapUrl), 700); } } }, '💾 Guardar y salir')), stage, fb, nextWrap));
+      xpShow(); timerChip.textContent = '⏱️ ' + fmt(elapsed); clearInterval(timerIv); timerIv = setInterval(tick, 1000); running = true;
       show();
     }
     /* pantalla de inicio (da el primer gesto para el audio) */
     app.append(topbar(mapUrl, '← Mapa de misiones'));
     const startNames = pair ? t.players[startTurn].name : '';
     app.append(h('div.card', { style: 'text-align:center' },
+      CY ? h('p.termline', {}, `> BRIEFING · MISIÓN ${String(N).padStart(2, '0')}/10`) : null,
       h('div', { style: 'font-size:4rem' }, cfg.emoji), h('h1', {}, `Clase ${N}: ${cfg.title}`), h('p.sub', { style: 'margin:8px 0 14px' }, cfg.intro),
       pair ? h('p.turnnote', {}, `👥 Van a jugar por turnos. Empieza ${t.players[startTurn].avatar} ${startNames}. ¡La otra persona ayuda y piensa con su compañero/a!`) : null,
       rs ? h('p.resumenote', {}, `💾 Tienen esta clase guardada: paso ${rs.step + 1} de ${cfg.steps.length}.`) : null,
       h('div', { style: 'display:flex;gap:12px;flex-wrap:wrap;justify-content:center' },
-        rs ? h('button.btn.big', { on: { click: () => { i = Math.min(rs.step, cfg.steps.length - 1); mistakes = rs.mistakes || 0; hints = rs.hints || 0; elapsed = rs.elapsed || 0; cs = rs.cs || cs; resumed = true; begin(); } } }, '▶ Continuar donde quedé') : null,
+        rs ? h('button.btn.big', { on: { click: () => { i = Math.min(rs.step, cfg.steps.length - 1); mistakes = rs.mistakes || 0; hints = rs.hints || 0; elapsed = rs.elapsed || 0; cs = rs.cs || cs; xp = rs.xp || 0; combo = rs.combo || 0; resumed = true; begin(); } } }, '▶ Continuar donde quedé') : null,
         h('button.btn.big' + (rs ? '.ghost' : ''), { on: { click: () => { if (rs) { t.resume = null; save(true); } begin(); } } }, rs ? '🔄 Empezar de nuevo' : '▶ ¡Empezar!'))));
-    window.addEventListener('beforeunload', () => { if (running && i > 0 && i < cfg.steps.length) { t.resume = { key, step: i, mistakes, hints, elapsed, cs, resumed: true, at: Date.now() }; save(true); } });
+    window.addEventListener('beforeunload', () => { if (running && i > 0 && i < cfg.steps.length) { t.resume = { key, step: i, mistakes, hints, elapsed, cs, xp, combo, resumed: true, at: Date.now() }; save(true); } });
   }
 
   /* ---------- tipos de actividad ---------- */
@@ -764,6 +820,49 @@ const EV = (() => {
       ok.onclick = () => { ok.setAttribute('disabled', ''); c.good(st.fb || '¡Qué creativo!'); c.complete(); };
       box.append(sw, cv, sizes, c.h('div', { style: 'text-align:center;margin-top:6px' }, ok)); return box;
     },
+    trivia(st, c) {
+      const box = c.h('div'), body = c.h('div'), prog = c.h('p.triviaprog'); let k = 0;
+      function show() {
+        body.innerHTML = ''; const Q = st.qs[k], grid = c.h('div.opts'), btns = [];
+        prog.textContent = `🎯 Pregunta ${k + 1} de ${st.qs.length}`; body.append(c.q(Q.q), grid);
+        shuffle(Q.o.map((t, j) => ({ t, ok: j === 0 }))).forEach(o => {
+          const b = c.h('button.opt', {}, o.t); b._ok = o.ok; btns.push(b);
+          b.onclick = () => {
+            if (o.ok) { b.classList.add('ok'); btns.forEach(x => x.setAttribute('disabled', '')); c.good(Q.fb || '¡Correcto!'); if (++k < st.qs.length) { c.pass(); setTimeout(show, 1200); } else c.complete(); }
+            else { b.classList.add('no'); b.setAttribute('disabled', ''); c.bad(Q.nofb || 'Casi. ¡Probá otra!'); c.pass(); }
+          };
+          grid.append(b);
+        });
+        c.onHint = () => { const w = btns.find(b => !b._ok && !b.disabled); if (w && btns.filter(b => !b.disabled).length > 2) { w.setAttribute('disabled', ''); w.style.opacity = .35; return 'Saqué una opción que no es.'; } pulse(btns.find(b => b._ok)); return 'Mirá la que brilla ✨'; };
+      }
+      show(); box.append(prog, body); return box;
+    },
+    hero(st, c) {
+      const box = c.h('div'); box.append(c.q(st.q));
+      const AV = ['🦸‍♀️', '🦸‍♂️', '🥷', '🧙', '🦹‍♀️', '🧑‍🚀'];
+      const ROWS = [['av', '🦸 Tu superhéroe', AV], ['t', '🐾 Título', st.titles || ['Halcon', 'Dragon', 'Pantera', 'Lobo', 'Robot', 'Delfin']], ['p', '⚡ Superpoder', st.powers || ['Rayo', 'Fuego', 'Hielo', 'Trueno', 'Viento', 'Cometa']], ['n', '🔢 Número secreto', ['07', '23', '42', '88', '99']], ['s', '✨ Símbolo mágico', ['!', '#', '$', '&', '*', '?']]];
+      const pk = { av: AV[0], t: null, p: null, n: null, s: null }, pills = {};
+      const card = c.h('div.herocard'), meter = c.h('div.meter', {}, c.h('i')), lbl = c.h('div', { style: 'font-weight:700;text-align:center' });
+      const ok = c.h('button.btn.big', {}, '🦸 ¡Activar mi súper clave!'); ok.setAttribute('disabled', '');
+      function paint() {
+        const pw = [pk.t, pk.p, pk.n, pk.s].filter(Boolean).join(''), done = !!(pk.t && pk.p && pk.n && pk.s);
+        card.innerHTML = ''; card.append(c.h('div.hav', {}, pk.av), c.h('div', {}, c.h('div.hname', {}, `${pk.t || '???'} ${pk.p || '???'}`), c.h('code.herocode', {}, pw || '…')));
+        const n = [pw.length >= 8, /[A-Z]/.test(pw), /[a-z]/.test(pw), /\d/.test(pw), /[^A-Za-z0-9]/.test(pw)].filter(Boolean).length;
+        meter.firstChild.style.width = n * 20 + '%'; meter.firstChild.style.background = n < 3 ? '#ef4444' : n < 5 ? '#f59e0b' : '#22c55e';
+        lbl.textContent = !pw ? '' : done ? '🛡️ ¡Súper fuerte! Mayúsculas, minúsculas, número y símbolo.' : 'Seguí eligiendo poderes…';
+        done ? ok.removeAttribute('disabled') : ok.setAttribute('disabled', '');
+      }
+      const slots = c.h('div.slots');
+      ROWS.forEach(([k, label, opts]) => {
+        const chips = c.h('div.chips'); pills[k] = [];
+        opts.forEach(o => { const b = c.h('button.pill', {}, o); pills[k].push(b); b.onclick = () => { pk[k] = o; pills[k].forEach(x => x.classList.toggle('sel', x === b)); paint(); }; chips.append(b); });
+        slots.append(c.h('div.slot', {}, c.h('h3', {}, label), chips));
+      });
+      const dice = c.h('button.btn.ghost', { on: { click: () => { ROWS.forEach(([k, , o]) => { const j = Math.floor(Math.random() * o.length); pk[k] = o[j]; pills[k].forEach((x, i) => x.classList.toggle('sel', i === j)); }); paint(); } } }, '🎲 ¡Sorpréndeme!');
+      c.onHint = () => st.hint || 'Elegí una pieza de cada fila, o tocá 🎲. Cuanto más mezclada, más fuerte.';
+      ok.onclick = () => { ok.setAttribute('disabled', ''); c.extra.add('hero'); c.good(st.fb || '¡Tu superhéroe protege tu clave!'); c.complete(); };
+      paint(); box.append(card, meter, lbl, slots, c.h('p.sub', { style: 'font-size:.85rem;margin:8px 0;text-align:center' }, '🤐 Una clave de superhéroe nunca se comparte. Es solo práctica: no usen esta clave en la vida real.'), c.h('div', { style: 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap' }, dice, ok)); return box;
+    },
     diploma(st, c) {
       const t = T(), total = totalStars(t);
       const names = t.players.map(p => p.avatar + ' ' + p.name).join('  &  ');
@@ -772,7 +871,7 @@ const EV = (() => {
         c.h('div', { style: 'font-size:3rem' }, '🏆'), c.h('h2', {}, st.title || 'Diploma de la Escuela de Verano Tecnológica'),
         c.h('p', {}, 'Se entrega a'), c.h('div.nm', {}, names),
         c.h('p', {}, st.text || 'por completar sus misiones y cuidar su mundo digital.'),
-        c.h('div.starsrow', {}, '⭐ ' + total), c.h('p', { style: 'font-size:.85rem;margin-top:8px' }, 'Escuela de Verano CIC 2 · Municipalidad de Mendoza · ' + d));
+        c.h('div.starsrow', {}, '⭐ ' + total), c.cfg.level === 3 ? c.h('p.dipmp', {}, `🎯 ${c.mp()} PM · ${mpRank(c.mp())[1]}`) : null, c.h('p', { style: 'font-size:.85rem;margin-top:8px' }, 'Escuela de Verano CIC 2 · Municipalidad de Mendoza · ' + d));
       const pr = c.h('button.btn.ghost', { style: 'margin-top:14px', on: { click: () => window.print() } }, '🖨️ Imprimir diploma');
       const w = c.h('div'); w.append(box, c.h('div', { style: 'text-align:center' }, pr));
       c.complete(); confetti(); return w;
@@ -823,13 +922,13 @@ const EV = (() => {
       list.forEach(t => {
         const nl = nextLocked(t);
         box.append(h('div.card.dteam', {},
-          h('div', { style: 'flex:1;min-width:220px' }, h('b', {}, avatarsOf(t) + ' ' + t.name), h('div.sub', {}, (t.mode === 2 ? '👥 Pareja' : '🙂 Solo/a') + ' · ⭐ ' + totalStars(t) + ' · ' + [1, 2, 3].map(l => LV(l).emoji + doneIn(t, l) + '/10').join('  ')),
+          h('div', { style: 'flex:1;min-width:220px' }, h('b', {}, avatarsOf(t) + ' ' + t.name), h('div.sub', {}, 'Nivel ' + teamLevel(t) + ' · ' + (t.mode === 2 ? '👥 Pareja' : '🙂 Solo/a') + ' · ⭐ ' + totalStars(t) + ' · ⚡ ' + xpOf(t) + ' XP · 🎯 ' + mpOf(t) + ' PM · ' + [1, 2, 3].map(l => LV(l).emoji + doneIn(t, l) + '/10').join('  ')),
             t.resume ? h('div.sub', {}, '💾 Clase guardada: ' + t.resume.key + ' (paso ' + (t.resume.step + 1) + ')') : null,
             t.mode === 2 ? h('div.sub', {}, `Aciertos: ${t.players[0].name} ${t.stats[0].ok} · ${t.players[1].name} ${t.stats[1].ok}`) : null),
           h('div.dbtns', {},
             nl ? h('button.btn.ghost', { on: { click: () => { if (nl.level) t.unlocked['L' + nl.l] = true; else t.unlocked[keyOf(nl.l, nl.n)] = true; save(true); panel(); } } }, nl.level ? `🔓 Abrir Nivel ${nl.l}` : `🔓 Abrir N${nl.l} clase ${nl.n}`) : h('span.sub', {}, 'Todo abierto'),
             h('button.btn.ghost', { on: { click: () => { for (let l = 1; l <= 3; l++) { t.unlocked['L' + l] = true; for (let n = 1; n <= 10; n++) t.unlocked[keyOf(l, n)] = true; } save(true); panel(); } } }, '🔓 Abrir todo'),
-            h('button.btn.ghost', { on: { click: () => { if (confirm('¿Reiniciar el progreso de ' + t.name + '?')) { t.done = {}; t.unlocked = {}; t.badges = {}; t.resume = null; t.stats = [{ ok: 0, err: 0 }, { ok: 0, err: 0 }]; save(true); panel(); } } } }, '♻️ Reiniciar'),
+            h('button.btn.ghost', { on: { click: () => { if (confirm('¿Reiniciar el progreso de ' + t.name + '?')) { t.done = {}; t.xpBy = {}; t.mpBy = {}; t.unlocked = {}; t.badges = {}; t.resume = null; t.stats = [{ ok: 0, err: 0 }, { ok: 0, err: 0 }]; save(true); panel(); } } } }, '♻️ Reiniciar'),
             h('button.btn.ghost', { on: { click: () => { if (confirm('¿Eliminar el equipo ' + t.name + '? No se puede deshacer.')) { delete S.teams[t.id]; if (S.active === t.id) S.active = null; save(true); panel(); } } } }, '🗑️ Eliminar'))));
       });
       app.append(box);

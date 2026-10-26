@@ -6,6 +6,7 @@
    Después de cambiar algo, subí este archivo a GitHub Pages y listo.
    ============================================================ */
 window.EV_CONFIG = {
+ "noLocks": false, /* true = todo abierto, sin contraseñas (para probar). Poné false para volver a usar los candados */
  "masterPin": "profe2026",
  "minutes": 15,
  "levels": {
