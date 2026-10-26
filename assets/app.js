@@ -226,11 +226,11 @@ const EV = (() => {
     };
   }
   function openClassLock(t, l, n, onOk) {
-    const prev = t.done[keyOf(l, n - 1)];
+    /* la contraseña de la clase la abre directamente, sin exigir haber terminado la anterior */
     lockModal({
       title: `Clase ${n} bloqueada`, speakOk: l === 1,
-      msg: prev ? 'Pídele a tu profe la contraseña secreta para abrir esta clase. 👩‍🏫' : `Primero terminen la Clase ${n - 1}. Después tu profe te da la contraseña.`,
-      verify: verifier(CFG.passwords[keyOf(l, n)], !!prev, `Primero terminen la Clase ${n - 1}.`),
+      msg: 'Pídele a tu profe la contraseña secreta para abrir esta clase. 👩‍🏫',
+      verify: verifier(CFG.passwords[keyOf(l, n)], true, ''),
       onOk: r => { t.unlocked[keyOf(l, n)] = true; const f = award(t, ['key']); save(); f.forEach(b => toast(b.e, '¡Insignia: ' + b.t + '!', b.d)); (onOk || (() => goto(ROOT + `nivel${l}/clase${n}.html`)))(r); }
     });
   }
