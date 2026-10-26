@@ -4,23 +4,32 @@
 <body class="n0"><div class="inst">Escuela de Verano CIC 2 Municipalidad de Mendoza / Centro de Innovación Tecnológica de Aldeas</div>
 <div class="wrap" id="app">
   <div class="hero">
-    <img src="cristian.png" alt="El profe Cristian" style="width:130px;height:130px;border-radius:50%;object-fit:cover;border:5px solid #fff;box-shadow:0 8px 0 rgba(0,0,0,.2)">
+    <div id="avs" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
     <h1>🎮 Juegos</h1>
-    <p class="sub">¡El profe Cristian los necesita! Elijan un juego.</p>
+    <p class="sub">¡Los profes los necesitan! Elijan un juego.</p>
   </div>
-  <div class="levels">
-    <a class="lvl l4" href="rescate-profe.html">
-      <span class="em">🗝️</span>
-      <span><b>Rescate del Profe Cristian</b><small>El malvado Dr. Bug secuestró al profe. Encuentren las llaves y las pistas para liberarlo. 1 o 2 jugadores.</small></span>
-      <span class="prog">Jugar ▶</span>
-    </a>
-    <a class="lvl l5" href="ciberdefensa.html">
-      <span class="em">👾</span>
-      <span><b>Defensores del Ciberespacio</b><small>Arcade de disparos: el profe Cristian frena las oleadas de bichos del Dr. Bug. Hay jefe final cada 5 oleadas. 1 jugador.</small></span>
-      <span class="prog">Jugar ▶</span>
-    </a>
-  </div>
+  <div class="levels" id="lst"></div>
   <div class="linksrow"><a class="linkbtn" href="../index.html">← Volver al inicio</a></div>
 </div>
 <footer>Escuela de Verano Tecnológica • Juegos</footer>
+<script src="profes.js"></script>
+<script>
+/* Un juego por tarjeta. El profe de cada juego se cambia en profes.js */
+const JUEGOS=[
+ {id:'rescate-profe',href:'rescate-profe.html',cls:'l4',em:'🗝️',t:'Rescate {del} {Profe} {Nombre}',d:'El malvado Dr. Bug secuestró {al} {profe}. Encuentren las llaves y las pistas para liberar{lo}. 1 o 2 jugadores.'},
+ {id:'ciberdefensa',href:'ciberdefensa.html',cls:'l5',em:'👾',t:'Defensores del Ciberespacio',d:'Arcade de disparos: {el} {profe} {Nombre} frena las oleadas de bichos del Dr. Bug. Hay jefe final cada 5 oleadas. 1 jugador.'},
+ {id:'profe-runner',href:'profe-runner.html',cls:'l6',em:'🏃',t:'{Profe} Runner',d:'Corré, saltá y agachate para escapar del Dr. Bug con {el} {profe} {Nombre}. Juntá monedas y aprendé a cuidarte en internet. 1 jugador.'},
+ {id:'come-bits',href:'come-bits.html',cls:'l7',em:'🟡',t:'{El} {Profe} Come-Bits',d:'Laberinto arcade: {el} {profe} {Nombre} recupera los bits de la red y escapa de los bichos. Con superpoder para comerlos. 1 jugador.'}
+];
+const lst=document.getElementById('lst'),avs=document.getElementById('avs'),seen={};
+JUEGOS.forEach(j=>{
+  const P=EVPROFE.PROFES[j.id],t=s=>EVPROFE.t(j.id,s);
+  const a=document.createElement('a');a.className='lvl '+j.cls;a.href=j.href;
+  a.innerHTML='<img src="'+P.foto+'" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:4px solid #fff;flex:none">'+
+   '<span><b>'+j.em+' '+t(j.t)+'</b><small>'+t(j.d)+'</small></span><span class="prog">Jugar ▶</span>';
+  lst.appendChild(a);
+  if(!seen[P.foto]){seen[P.foto]=1;const im=document.createElement('img');im.src=P.foto;im.alt=P.nombre;
+    im.style.cssText='width:96px;height:96px;border-radius:50%;object-fit:cover;border:5px solid #fff;box-shadow:0 8px 0 rgba(0,0,0,.2)';avs.appendChild(im)}
+});
+</script>
 </body></html>

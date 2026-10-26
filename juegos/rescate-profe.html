@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Rescate del Profe Cristian</title>
+<title>Rescate {del} {Profe} {Nombre}</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
 html,body{margin:0;height:100%;background:#0b0b1a;overflow:hidden;font-family:'Press Start 2P',monospace;color:#fff;-webkit-user-select:none;user-select:none}
@@ -43,9 +43,9 @@ button.y{background:#f9a825;color:#000;box-shadow:0 calc(var(--u)*4) 0 #7a5200}
   <div id="hudbtns"><button id="bJ">📜 NOTAS (J)</button><button id="bM">🔊 SONIDO</button></div>
 
   <div id="title" class="ov show">
-    <h1>RESCATE DEL<br>PROFE CRISTIAN</h1>
+    <h1>RESCATE {DEL}<br>{PROFE} {NOMBRE}</h1>
     <canvas id="prev" width="64" height="64"></canvas>
-    <p>El malvado <span class="hl">DR. BUG</span> secuestró al profe y lo encerró junto al <span class="hl">TESORO</span>.</p>
+    <p>El malvado <span class="hl">DR. BUG</span> secuestró {al} {profe} y {lo} encerró junto al <span class="hl">TESORO</span>.</p>
     <p>Encuentren <span class="hl">3 pergaminos</span> con pistas, juntan <span class="hl">3 llaves</span> y pónganlas en el orden correcto en el cofre.</p>
     <p class="small">Las placas del piso abren las puertas: uno la pisa y el otro pasa.<br>Saltá encima de los bichos para aplastarlos.</p>
     <p class="small">J1: A/D mover, W o ESPACIO saltar, E cofre &nbsp;|&nbsp; J2: ← → mover, ↑ saltar, ENTER cofre</p>
@@ -53,14 +53,14 @@ button.y{background:#f9a825;color:#000;box-shadow:0 calc(var(--u)*4) 0 #7a5200}
       <button class="b" id="p1">1 JUGADOR</button>
       <button class="b g" id="p2">2 JUGADORES</button>
     </div>
-    <label class="b y" for="file">📷 PONER LA CARA DEL PROFE</label>
+    <label class="b y" for="file">📷 PONER LA CARA {DEL} {PROFE}</label>
     <input type="file" id="file" accept="image/*" style="display:none">
     <a class="b" href="index.html" style="background:#455a64;box-shadow:0 calc(var(--u)*4) 0 #263238;font-size:calc(var(--u)*9)">← VOLVER A JUEGOS</a>
   </div>
 
   <div id="clue" class="ov">
     <h2 id="clueN">PISTA</h2>
-    <p class="small">Nota del Profe Cristian:</p>
+    <p class="small">Nota {del} {Profe} {Nombre}:</p>
     <p id="clueT" style="font-size:calc(var(--u)*15);max-width:85%"></p>
     <button class="b" id="clueOk">ENTENDIDO</button>
   </div>
@@ -81,7 +81,7 @@ button.y{background:#f9a825;color:#000;box-shadow:0 calc(var(--u)*4) 0 #7a5200}
   </div>
 
   <div id="win" class="ov">
-    <h1>¡PROFE<br>RESCATADO!</h1>
+    <h1>¡{PROFE}<br>{RESCATADO}!</h1>
     <canvas id="winface" width="64" height="64" style="width:calc(var(--u)*80);height:calc(var(--u)*80);image-rendering:pixelated"></canvas>
     <p>«¡Gracias equipo! ¡Se ganaron un 10!»</p>
     <p id="stats" class="hl" style="line-height:2.2"></p>
@@ -94,7 +94,9 @@ button.y{background:#f9a825;color:#000;box-shadow:0 calc(var(--u)*4) 0 #7a5200}
   </div>
 </div>
 
+<script src="profes.js"></script>
 <script>
+const PF=EVPROFE.init('rescate-profe');
 (()=>{
 "use strict";
 const $=id=>document.getElementById(id);
@@ -168,8 +170,8 @@ function loadFace(src,fallback){
   i.src=src;
 }
 makeSprites();
-let saved=null;try{saved=localStorage.getItem('cristianFace')}catch(e){}
-if(saved)loadFace(saved,'cristian.png');else loadFace('cristian.png');
+let saved=null;try{saved=localStorage.getItem('cara_'+PF.id)}catch(e){}
+if(saved)loadFace(saved,PF.foto);else loadFace(PF.foto);
 $('file').onchange=e=>{
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
@@ -180,7 +182,7 @@ $('file').onchange=e=>{
       const s=Math.min(im.width,im.height);
       c.getContext('2d').drawImage(im,(im.width-s)/2,(im.height-s)*.25,s,s,0,0,96,96);
       const url=c.toDataURL('image/png');
-      try{localStorage.setItem('cristianFace',url)}catch(_){}
+      try{localStorage.setItem('cara_'+PF.id,url)}catch(_){}
       loadFace(url);
     };
     im.src=r.result;
@@ -339,7 +341,7 @@ $('tryBtn').onclick=()=>{
   const ok=slotSel.filter((k,i)=>k===secret[i]).length;
   if(ok===3){
     closeModal();chest.open=true;S.open();
-    toast('¡EL COFRE SE ABRIÓ! La jaula del profe se destrabó',4500);
+    toast(PF.t('¡EL COFRE SE ABRIÓ! La jaula {del} {profe} se destrabó'),4500);
   }else{
     penalty+=10000;S.wrong();
     $('msg').textContent=`${ok} de 3 llaves en su lugar. ¡+10 segundos de penalidad!`;
@@ -632,7 +634,7 @@ function drawHUD(){
   // retrato
   ctx.save();ctx.translate(30,34);drawFaceTo(ctx,0,0,22);ctx.restore();
   ctx.strokeStyle='#ffd54a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(30,34,22,0,7);ctx.stroke();
-  txt('PROFE CRISTIAN',62,22,9,'#ffd54a');
+  txt(PF.t('{PROFE} {NOMBRE}'),62,22,9,'#ffd54a');
   for(let i=0;i<5;i++){
     ctx.globalAlpha=i<hearts?1:.22;
     ctx.drawImage(spr.life,60+i*24,28);

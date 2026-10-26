@@ -38,9 +38,9 @@ button.b:active{transform:translateY(calc(var(--u)*3));box-shadow:none}
 
   <div id="title" class="ov show">
     <h1>DEFENSORES DEL<br>CIBERESPACIO</h1>
-    <img id="face" src="cristian.png" alt="Profe Cristian">
+    <img id="face" data-foto alt="{Profe} {Nombre}">
     <p>El <span class="hl">DR. BUG</span> mandó sus bichos a invadir la red.</p>
-    <p>¡El <span class="hl">PROFE CRISTIAN</span> los frena con su rayo de código!</p>
+    <p>¡{El} <span class="hl">{PROFE} {NOMBRE}</span> los frena con su rayo de código!</p>
     <p class="small">Agarrá las ⭐ para disparar triple. Cada 5 oleadas aparece el Dr. Bug en persona.</p>
     <p class="small">← → o A/D: mover &nbsp;|&nbsp; ESPACIO: disparar &nbsp;|&nbsp; P: pausa</p>
     <div><button class="b" id="go">▶ JUGAR</button></div>
@@ -59,8 +59,10 @@ button.b:active{transform:translateY(calc(var(--u)*3));box-shadow:none}
 
   <div id="touch"><div class="g2"><button id="tl">◀</button><button id="tr">▶</button></div><div class="g2"><button id="tf">🔥</button></div></div>
 </div>
+<script src="profes.js"></script>
 <script>
 (()=>{
+const PF=EVPROFE.init('ciberdefensa');
 const W=960,H=540,$=id=>document.getElementById(id);
 const cv=$('c'),ctx=cv.getContext('2d'),wrap=$('wrap');
 function fit(){wrap.style.setProperty('--u',(wrap.clientWidth/960)+'px')}
@@ -68,9 +70,9 @@ addEventListener('resize',fit);fit();
 
 /* ---- cara del profe (misma que usa el otro juego) ---- */
 const face=new Image();let faceOK=false;
-function loadFace(src){face.onload=()=>{faceOK=true};face.onerror=()=>{faceOK=false;if(src!=='cristian.png')loadFace('cristian.png')};face.src=src}
-let saved=null;try{saved=localStorage.getItem('cristianFace')}catch(e){}
-loadFace(saved||'cristian.png');
+function loadFace(src){face.onload=()=>{faceOK=true};face.onerror=()=>{faceOK=false;if(src!==PF.foto)loadFace(PF.foto)};face.src=src}
+let saved=null;try{saved=localStorage.getItem('cara_'+PF.id)}catch(e){}
+loadFace(saved||PF.foto);
 function drawFace(x,y,r){
   ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.closePath();ctx.clip();
   if(faceOK&&face.naturalWidth){const s=Math.min(face.naturalWidth,face.naturalHeight);ctx.drawImage(face,(face.naturalWidth-s)/2,(face.naturalHeight-s)/2,s,s,x-r,y-r,r*2,r*2)}
@@ -104,7 +106,7 @@ if(matchMedia('(pointer:coarse)').matches)$('touch').classList.add('on');
 
 /* ---- estado ---- */
 let state='title',score=0,hi=0,wave=1,lives=3,frame=0,fdir=1,msgT=0,delay=0,total=1,shake=0;
-try{hi=+localStorage.getItem('cristianBugHi')||0}catch(e){}
+try{hi=+localStorage.getItem('rec_ciberdefensa')||0}catch(e){}
 let P,pb,eb,en,drops,parts,stars;
 stars=Array.from({length:70},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*1.5+.4}));
 function newPlayer(){P={x:W/2,y:H-48,w:40,h:40,cool:0,inv:0,power:0}}
@@ -127,7 +129,7 @@ const hit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 function boom(x,y,c,n){for(let i=0;i<(n||14);i++){const a=Math.random()*6.28,v=Math.random()*3+1;parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:30+Math.random()*20,c})}}
 function over(){
   state='over';$('hb').style.display='none';
-  const nr=score>hi;if(nr){hi=score;try{localStorage.setItem('cristianBugHi',hi)}catch(e){}}
+  const nr=score>hi;if(nr){hi=score;try{localStorage.setItem('rec_ciberdefensa',hi)}catch(e){}}
   $('fs').textContent=score;$('fw').textContent=wave;$('fh').textContent=hi;$('nr').textContent=nr?'★ ¡NUEVO RÉCORD! ★':'';
   setTimeout(()=>{if(state==='over')$('over').classList.add('show')},700);
 }
