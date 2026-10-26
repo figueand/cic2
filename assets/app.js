@@ -1,4 +1,4 @@
-/* Escuela de Verano Tecnológica · motor interactivo v8 (sin dependencias)
+/* Escuela de Verano Tecnológica · motor interactivo v9 (sin dependencias)
    Equipos de 1 o 2 personas · candados con contraseña · guardado automático · panel docente */
 const EV = (() => {
   'use strict';
@@ -164,6 +164,38 @@ const EV = (() => {
   function download(name, text) {
     const a = h('a', { href: URL.createObjectURL(new Blob([text], { type: 'application/json' })), download: name });
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  /* ---------- envío de dibujos a Google Drive (Apps Script) ---------- */
+  const DQ = 'ev_drive_q';
+  const dqLoad = () => { try { return JSON.parse(localStorage.getItem(DQ) || '[]'); } catch (e) { return []; } };
+  const dqSave = q => { try { localStorage.setItem(DQ, JSON.stringify(q)); return true; } catch (e) { return false; } };
+  async function drivePost(p) {
+    const r = await fetch(CFG.driveUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ token: CFG.driveToken || '' }, p)) });
+    const j = await r.json();
+    if (!j.ok) { const er = new Error(j.error || 'error'); er.server = true; throw er; }
+    return j;
+  }
+  /* "bandeja de salida": se guarda primero y se borra al confirmarse; si falta internet se reintenta solo */
+  async function driveSend(p) {
+    if (!CFG.driveUrl) return 'off';
+    const drop = () => dqSave(dqLoad().filter(x => x.file !== p.file));
+    const q = dqLoad().filter(x => x.file !== p.file); q.push(p); while (q.length > 6) q.shift();
+    const stored = dqSave(q);
+    try { await drivePost(p); drop(); return 'ok'; } catch (e) { if (e.server) { drop(); return 'bad'; } return stored ? 'queued' : 'bad'; }
+  }
+  async function driveFlush() {
+    if (!CFG.driveUrl || !navigator.onLine) return;
+    const rest = [];
+    for (const p of dqLoad()) { try { await drivePost(p); } catch (e) { if (!e.server) rest.push(p); } }
+    dqSave(rest);
+  }
+  window.addEventListener('online', driveFlush); setTimeout(driveFlush, 2500);
+  function printImage(url, title) {
+    const sh = h('div.printsheet', {}, h('h2', {}, title), h('img', { src: url }));
+    document.body.append(sh); document.body.classList.add('printing');
+    const done = () => { document.body.classList.remove('printing'); sh.remove(); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done); setTimeout(() => window.print(), 120); setTimeout(done, 120000);
   }
 
   /* ---------- barra superior ---------- */
@@ -498,9 +530,9 @@ const EV = (() => {
     const stars = () => { const e = mistakes + hints * .5; return e <= 1 ? 3 : e <= 4 ? 2 : 1; };
     const fmt = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
     function tick() {
-      elapsed++; const lim = (CFG.minutes || 15) * 60;
+      elapsed++; const lim = (cfg.minutes || CFG.minutes || 15) * 60;
       timerChip.textContent = '⏱️ ' + fmt(elapsed) + ' / ' + fmt(lim); timerChip.classList.toggle('over', elapsed > lim);
-      if (elapsed === lim && !warned) { warned = true; toast('⏰', '¡Pasaron ' + (CFG.minutes || 15) + ' minutos!', 'Terminen esta actividad y avisen a su profe.', 6000); chime('turn'); }
+      if (elapsed === lim && !warned) { warned = true; toast('⏰', '¡Pasaron ' + (cfg.minutes || CFG.minutes || 15) + ' minutos!', 'Terminen esta actividad y avisen a su profe.', 6000); chime('turn'); }
     }
 
     function finish() {
@@ -541,8 +573,8 @@ const EV = (() => {
         h('div', { style: 'display:grid;gap:14px;margin-top:18px;justify-items:center' },
           nextLocked ? h('p.sub', { style: 'font-size:.9rem' }, '🔑 Para seguir, tu profe les da la contraseña.') : null,
           nextBtn,
-          h('a.btn.poki.big', { href: cfg.poki.url, target: '_blank', rel: 'noopener' }, '🎮 ' + cfg.poki.label),
-          h('p.sub', { style: 'font-size:.85rem' }, 'Se abre en otra pestaña. Jueguen con la profe cerca 👩‍🏫'),
+          CFG.showPoki === false ? null : h('a.btn.poki.big', { href: cfg.poki.url, target: '_blank', rel: 'noopener' }, '🎮 ' + cfg.poki.label),
+          CFG.showPoki === false ? null : h('p.sub', { style: 'font-size:.85rem' }, 'Se abre en otra pestaña. Jueguen con la profe cerca 👩‍🏫'),
           h('div', { style: 'display:flex;gap:12px;flex-wrap:wrap;justify-content:center' },
             h('a.btn.ghost', { href: mapUrl }, '🗺️ Mapa de misiones'),
             h('button.btn.ghost', { on: { click: () => { mistakes = 0; hints = 0; elapsed = 0; cs = [{ ok: 0, err: 0 }, { ok: 0, err: 0 }]; i = 0; resumed = false; xp = 0; combo = 0; bestCombo = 0; if (duo) duo.style.display = ''; begin(); } } }, '🔁 Repetir')))));
@@ -800,25 +832,142 @@ const EV = (() => {
       box.append(post, cnt); return box;
     },
     draw(st, c) {
+      const W = 960, H = 680, box = c.h('div'); box.append(c.q(st.q));
+      const cv = c.h('canvas.draw', { width: W, height: H }), g = cv.getContext('2d', { willReadFrequently: true });
+      const PAL = ['#111827', '#6b7280', '#ffffff', '#ef4444', '#f97316', '#facc15', '#22c55e', '#14b8a6', '#3b82f6', '#6366f1', '#a855f7', '#ec4899', '#92400e', '#fda4af', '#bbf7d0', '#bae6fd'];
+      const STAMPS = st.stamps || ['⭐', '🌈', '🐶', '🌸', '🚀', '🦄', '❤️', '🌞'];
+      let col = '#ef4444', size = 8, tool = 'pencil', solid = false, stamp = STAMPS[0], actions = 0, drawing = false, p0 = null, last = null, snap = null;
+      const undo = [], redo = [];
+      const blank = () => { g.globalAlpha = 1; g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); }; blank(); g.lineCap = g.lineJoin = 'round';
+      const grab = () => g.getImageData(0, 0, W, H);
+      const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; };
+      const ok = c.h('button.btn.big', {}, '✅ ¡Terminé mi obra!'); ok.setAttribute('disabled', '');
+      const status = c.h('p.pstatus', {}, '');
+      const chk = () => { if (actions >= (st.min || 4)) ok.removeAttribute('disabled'); };
+      const bUndo = c.h('button.pill', {}, '↩️ Deshacer'), bRedo = c.h('button.pill', {}, '↪️ Rehacer');
+      const sync = () => { undo.length ? bUndo.removeAttribute('disabled') : bUndo.setAttribute('disabled', ''); redo.length ? bRedo.removeAttribute('disabled') : bRedo.setAttribute('disabled', ''); };
+      const push = () => { undo.push(grab()); if (undo.length > 10) undo.shift(); redo.length = 0; sync(); };
+      bUndo.onclick = () => { if (!undo.length) return; redo.push(grab()); g.putImageData(undo.pop(), 0, 0); sync(); };
+      bRedo.onclick = () => { if (!redo.length) return; undo.push(grab()); g.putImageData(redo.pop(), 0, 0); sync(); };
+      sync();
+      function fill(x, y, hex) {
+        const id = grab(), d = id.data; x |= 0; y |= 0;
+        const i0 = (y * W + x) * 4, r0 = d[i0], g0 = d[i0 + 1], b0 = d[i0 + 2], n = parseInt(hex.slice(1), 16), r = n >> 16, gg = (n >> 8) & 255, b = n & 255;
+        if (Math.abs(r - r0) + Math.abs(gg - g0) + Math.abs(b - b0) < 12) return;
+        const seen = new Uint8Array(W * H), stk = [x + y * W];
+        while (stk.length) {
+          const q = stk.pop(); if (seen[q]) continue; seen[q] = 1; const i = q * 4;
+          if (Math.abs(d[i] - r0) + Math.abs(d[i + 1] - g0) + Math.abs(d[i + 2] - b0) > 60) continue;
+          d[i] = r; d[i + 1] = gg; d[i + 2] = b; d[i + 3] = 255; const px = q % W;
+          if (px > 0) stk.push(q - 1); if (px < W - 1) stk.push(q + 1); if (q >= W) stk.push(q - W); if (q < W * (H - 1)) stk.push(q + W);
+        }
+        g.putImageData(id, 0, 0);
+      }
+      function shape(a, b) {
+        g.strokeStyle = g.fillStyle = col; g.lineWidth = size; g.beginPath();
+        if (tool === 'line') { g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
+        else if (tool === 'rect') { solid ? g.fillRect(a[0], a[1], b[0] - a[0], b[1] - a[1]) : g.strokeRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); }
+        else { g.ellipse((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.abs(b[0] - a[0]) / 2 + .1, Math.abs(b[1] - a[1]) / 2 + .1, 0, 0, 7); solid ? g.fill() : g.stroke(); }
+      }
+      function spray(x, y) { g.fillStyle = col; for (let k = 0; k < 16; k++) { const a = Math.random() * 6.283, r = Math.random() * size * 2.4; g.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, 2.5, 2.5); } }
+      cv.onpointerdown = e => {
+        const pt = pos(e); push();
+        if (tool === 'fill') { fill(pt[0], pt[1], col); actions++; chk(); return; }
+        if (tool === 'stamp') { g.font = (size * 4 + 28) + 'px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(stamp, pt[0], pt[1]); actions++; chk(); return; }
+        drawing = true; cv.setPointerCapture(e.pointerId); p0 = last = pt; snap = undo[undo.length - 1];
+        if (tool === 'spray') { spray(pt[0], pt[1]); return; }
+        if (tool === 'pencil' || tool === 'eraser') { g.strokeStyle = tool === 'eraser' ? '#fff' : col; g.lineWidth = tool === 'eraser' ? size * 2.5 : size; g.beginPath(); g.moveTo(pt[0], pt[1]); g.lineTo(pt[0] + .1, pt[1] + .1); g.stroke(); }
+      };
+      cv.onpointermove = e => {
+        if (!drawing) return; const pt = pos(e);
+        if (tool === 'spray') spray(pt[0], pt[1]);
+        else if (tool === 'pencil' || tool === 'eraser') { const m = [(last[0] + pt[0]) / 2, (last[1] + pt[1]) / 2]; g.beginPath(); g.moveTo(last[0], last[1]); g.quadraticCurveTo(last[0], last[1], m[0], m[1]); g.stroke(); last = pt; }
+        else { g.putImageData(snap, 0, 0); shape(p0, pt); }
+      };
+      cv.onpointerup = cv.onpointercancel = () => { if (drawing) { drawing = false; actions++; chk(); } };
+      const toolBtns = {};
+      const T0 = [['pencil', '✏️ Lápiz'], ['spray', '🎨 Aerosol'], ['eraser', '🧽 Goma'], ['fill', '🪣 Balde'], ['line', '📏 Línea'], ['rect', '⬜ Cuadro'], ['circle', '⭕ Círculo'], ['stamp', '⭐ Sello']];
+      const tools = c.h('div.ptools', {}, T0.map(([k, t]) => { const b = c.h('button.pill' + (k === tool ? '.sel' : ''), { 'aria-label': t }, t); toolBtns[k] = b; b.onclick = () => { tool = k; T0.forEach(([j]) => toolBtns[j].classList.toggle('sel', j === k)); stampRow.style.display = k === 'stamp' ? '' : 'none'; solidBtn.style.display = k === 'rect' || k === 'circle' ? '' : 'none'; }; return b; }));
+      const solidBtn = c.h('button.pill', { style: 'display:none', on: { click: e => { solid = !solid; e.currentTarget.textContent = solid ? '🟦 Relleno' : '▫️ Solo borde'; } } }, '▫️ Solo borde');
+      const stampBtns = [];
+      const stampRow = c.h('div.ptools', { style: 'display:none' }, STAMPS.map(s0 => { const b = c.h('button.stamp' + (s0 === stamp ? '.sel' : ''), {}, s0); stampBtns.push(b); b.onclick = () => { stamp = s0; stampBtns.forEach(x => x.classList.toggle('sel', x === b)); }; return b; }));
+      const sw = c.h('div.tools2');
+      const swBtns = PAL.map(k => { const b = c.h('button.sw' + (k === col ? '.sel' : ''), { style: 'background:' + k, 'aria-label': 'color ' + k }); b.onclick = () => setCol(k); sw.append(b); return b; });
+      const pick = c.h('input.pcolor', { type: 'color', value: col, 'aria-label': 'Elegir otro color' });
+      function setCol(k) { col = k; pick.value = k; swBtns.forEach((b, n) => b.classList.toggle('sel', PAL[n] === k)); if (tool === 'eraser') toolBtns.pencil.click(); }
+      pick.oninput = () => setCol(pick.value); sw.append(pick);
+      const rng = c.h('input', { type: 'range', min: 2, max: 40, value: size, 'aria-label': 'Grosor' }), dot = c.h('span.pdot'); const sd = () => { dot.style.width = dot.style.height = Math.max(4, size) + 'px'; }; sd();
+      rng.oninput = () => { size = +rng.value; sd(); };
+      const who = () => { const t = T(); return t ? namesOf(t) : 'equipo'; };
+      const png = () => cv.toDataURL('image/png');
+      const fname = () => `N${c.cfg.level}-C${c.cfg.num}_${who().replace(/[^A-Za-z0-9áéíóúñÁÉÍÓÚÑ]+/g, '-')}.png`;
+      async function cloud(manual) {
+        if (!CFG.driveUrl) { if (manual) status.textContent = '☁️ Drive todavía no está conectado. Usá 💾 Guardar o 🖨️ Imprimir.'; return; }
+        status.textContent = '☁️ Enviando a la carpeta de la clase…';
+        const r = await driveSend({ file: fname(), level: c.cfg.level, num: c.cfg.num, team: T() ? T().name : '', names: who(), image: png(), ts: Date.now() });
+        status.textContent = { ok: '☁️ ¡Guardado en Drive! Tu profe lo puede imprimir.', queued: '⏳ Sin internet: se enviará solo cuando vuelva la conexión.', bad: '⚠️ No se pudo enviar. Usá 💾 Guardar y avisá a tu profe.', off: '' }[r];
+      }
+      const bClr = c.h('button.pill', { on: { click: () => { push(); blank(); actions = 0; ok.setAttribute('disabled', ''); } } }, '🗑️ Borrar todo');
+      const bSave = c.h('button.pill', { on: { click: () => { const a = c.h('a', { href: png(), download: fname() }); document.body.append(a); a.click(); a.remove(); status.textContent = '💾 Descargaste ' + fname(); } } }, '💾 Guardar');
+      const bPrint = c.h('button.pill', { on: { click: () => printImage(png(), `${who()} · Nivel ${c.cfg.level} · Clase ${c.cfg.num}`) } }, '🖨️ Imprimir');
+      const bCloud = CFG.driveUrl ? c.h('button.pill', { on: { click: () => cloud(true) } }, '☁️ Enviar a Drive') : null;
+      c.onHint = () => (c.cfg.level === 3 ? 'Piensen un tema juntos y dividan el dibujo: uno dibuja y el otro elige los colores.' : 'Probá el 🪣 balde para pintar rápido y el ⭐ sello para decorar. ¡Uno dibuja y el otro elige los colores!');
+      ok.onclick = () => { ok.setAttribute('disabled', ''); cloud(false); c.good(st.fb || '¡Qué creativo!'); c.complete(); };
+      box.append(tools, solidBtn, stampRow, sw, c.h('div.psize', {}, '🖌️', rng, dot), cv, c.h('div.ptools', {}, bUndo, bRedo, bClr, bSave, bPrint, bCloud), status, c.h('div', { style: 'text-align:center;margin-top:6px' }, ok)); return box;
+    },
+    /* actividad con herramienta externa: se abre en un marco dentro de la página (o en pestaña nueva) y el trabajo se sube a Drive */
+    externo(st, c) {
       const box = c.h('div'); box.append(c.q(st.q));
-      const cv = c.h('canvas.draw', { width: 720, height: 420 }); const g = cv.getContext('2d');
-      g.fillStyle = '#fff'; g.fillRect(0, 0, 720, 420); g.lineCap = g.lineJoin = 'round';
-      let col = '#ef4444', size = 8, down = false, strokes = 0, stamp = null;
-      const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * 720 / r.width, (e.clientY - r.top) * 420 / r.height]; };
-      cv.onpointerdown = e => { const [x, y] = pos(e); if (stamp) { g.font = '56px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(stamp, x, y); strokes += 2; chk(); return; } down = true; cv.setPointerCapture(e.pointerId); g.strokeStyle = col; g.lineWidth = size; g.beginPath(); g.moveTo(x, y); g.lineTo(x + .1, y + .1); g.stroke(); };
-      cv.onpointermove = e => { if (!down) return; const [x, y] = pos(e); g.lineTo(x, y); g.stroke(); };
-      cv.onpointerup = () => { if (down) { down = false; strokes++; chk(); } };
-      const ok = c.h('button.btn', {}, '✅ ¡Terminé mi obra!'); ok.setAttribute('disabled', '');
-      const chk = () => { if (strokes >= (st.min || 4)) ok.removeAttribute('disabled'); };
-      const sw = c.h('div.tools2', {}, ['#ef4444', '#f59e0b', '#facc15', '#22c55e', '#3b82f6', '#a855f7', '#92400e', '#111827'].map((k, n) => { const b = c.h('button.sw' + (n === 0 ? '.sel' : ''), { style: 'background:' + k, 'aria-label': 'color' }); b.onclick = () => { col = k; stamp = null; sw.querySelectorAll('.sw,.stamp').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); }; return b; }));
-      (st.stamps || ['⭐', '🌈', '🐶', '🌸', '🚀']).forEach(s => { const b = c.h('button.stamp', {}, s); b.onclick = () => { stamp = s; sw.querySelectorAll('.sw,.stamp').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); }; sw.append(b); });
-      const sizes = c.h('div.tools2', {}, [['🖌️ Fino', 4], ['🖌️ Medio', 10], ['🖌️ Grueso', 22]].map(([t, v]) => c.h('button.pill', { on: { click: () => { size = v; stamp = null; sw.querySelectorAll('.stamp').forEach(x => x.classList.remove('sel')); } } }, t)));
-      const clr = c.h('button.pill', { on: { click: () => { g.fillStyle = '#fff'; g.fillRect(0, 0, 720, 420); strokes = 0; ok.setAttribute('disabled', ''); } } }, '🧽 Borrar');
-      const dl = c.h('button.pill', { on: { click: () => { const a = c.h('a', { href: cv.toDataURL('image/png'), download: 'mi-obra.png' }); a.click(); } } }, '💾 Guardar');
-      sizes.append(clr, dl);
-      c.onHint = () => (c.cfg.level === 3 ? 'Piensen un tema juntos y dividan el dibujo: uno dibuja y el otro elige los colores.' : 'Uno dibuja y el otro elige los colores. ¡Después cambian!');
-      ok.onclick = () => { ok.setAttribute('disabled', ''); c.good(st.fb || '¡Qué creativo!'); c.complete(); };
-      box.append(sw, cv, sizes, c.h('div', { style: 'text-align:center;margin-top:6px' }, ok)); return box;
+      const mm = n => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+      const limit = (st.mins || 20) * 60; let left = limit, iv = null, sent = false;
+      const clock = c.h('span.pill', {}, '⏳ ' + mm(left));
+      const tick = () => { left = Math.max(0, left - 1); clock.textContent = '⏳ ' + mm(left); if (left === 0) { clearInterval(iv); toast('⏰', '¡Se terminó el tiempo de esta actividad!', 'Guarden y suban lo que tengan.', 6000); chime('turn'); } };
+      const steps = c.h('ol', { style: 'text-align:left;max-width:680px;margin:10px auto;padding-left:24px;line-height:1.6' }, (st.steps || []).map(x => c.h('li', {}, x)));
+      const frameBox = c.h('div', { style: 'display:none;margin:12px 0' });
+      const note = c.h('p.sub', { style: 'font-size:.9rem' }, '');
+      let started = false;
+      function startClock() { if (!started) { started = true; iv = setInterval(tick, 1000); } }
+      const bOpen = c.h('button.btn.big', { on: { click: () => {
+        startClock(); frameBox.style.display = '';
+        if (!frameBox.firstChild) {
+          const fr = c.h('iframe', { src: st.url, title: st.tool, allow: 'camera; microphone; fullscreen; autoplay', referrerpolicy: 'no-referrer', sandbox: 'allow-scripts allow-same-origin allow-forms allow-downloads allow-modals', style: 'width:100%;height:72vh;min-height:420px;border:3px solid var(--line,#ddd);border-radius:16px;background:#fff' });
+          frameBox.append(fr);
+          note.textContent = 'Si la ventana queda en blanco o dice que no se puede mostrar, usá “Abrir en pestaña nueva”.';
+        }
+      } } }, (st.emoji || '🚀') + ' Abrir ' + st.tool + ' acá');
+      const bTab = c.h('a.btn.ghost', { href: st.url, target: '_blank', rel: 'noopener', on: { click: startClock } }, '↗️ Abrir en pestaña nueva');
+      /* subida a Drive */
+      const who = () => { const t = T(); return t ? namesOf(t) : 'equipo'; };
+      const slug = x => x.replace(/[^A-Za-z0-9áéíóúñÁÉÍÓÚÑ]+/g, '-');
+      const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'application/pdf': 'pdf', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'video/mp4': 'mp4', 'video/webm': 'webm' };
+      const status = c.h('p.sub', { style: 'min-height:1.4em;font-weight:600' }, '');
+      const ok = c.h('button.btn', { disabled: '' }, '✅ ¡Terminamos!');
+      ok.onclick = () => { clearInterval(iv); ok.setAttribute('disabled', ''); c.good(st.fb || '¡Muy bien, a seguir creando!'); c.complete(); };
+      const file = c.h('input', { type: 'file', accept: st.accept || 'image/*,application/pdf,audio/*,video/mp4,video/webm', style: 'display:none' });
+      const bUp = c.h('button.pill', { on: { click: () => file.click() } }, '📤 Subir mi trabajo');
+      file.onchange = async () => {
+        const f = file.files[0]; if (!f) return;
+        const mime = (f.type || '').split(';')[0], ext = EXT[mime];
+        if (!ext) { status.textContent = '⚠️ Ese tipo de archivo no se puede subir. Probá con imagen, PDF, audio o un video corto.'; return; }
+        if (f.size > 8 * 1024 * 1024) { status.textContent = '⚠️ El archivo pesa mucho (máximo 8 MB). Probá con un clip más corto o una captura.'; return; }
+        status.textContent = '☁️ Subiendo…'; bUp.setAttribute('disabled', '');
+        try {
+          const data = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('lectura')); r.readAsDataURL(f); });
+          const name = `N${c.cfg.level}-C${c.cfg.num}_${slug(st.tool)}_${slug(who())}.${ext}`;
+          const r = await driveSend({ file: name, folder: st.tool, level: c.cfg.level, num: c.cfg.num, team: T() ? T().name : '', names: who(), image: data, ts: Date.now() });
+          status.textContent = { ok: '☁️ ¡Guardado en Drive! Tu profe lo va a ver.', queued: '⏳ Sin internet: se enviará solo cuando vuelva la conexión.', bad: '⚠️ No se pudo enviar. Avisá a tu profe.', off: '☁️ Drive todavía no está conectado: mostrale tu trabajo a tu profe.' }[r];
+          if (r === 'ok' || r === 'queued') { sent = true; ok.removeAttribute('disabled'); }
+        } catch (e) { status.textContent = '⚠️ No se pudo leer el archivo. Probá de nuevo.'; }
+        bUp.removeAttribute('disabled'); file.value = '';
+      };
+      const skip = c.h('button.btn.ghost', { style: 'font-size:.85rem;padding:8px 14px', on: { click: () => ok.removeAttribute('disabled') } }, 'No pude subirlo (avisar a la profe)');
+      c.onHint = () => st.hint || 'Seguí los pasos de la lista de a uno. ¡Pedí ayuda a tu profe si algo no anda!';
+      const upRow = st.upload === false ? null : c.h('div', { style: 'text-align:center;margin-top:10px' },
+        c.h('p.sub', {}, st.uploadText || '📤 Cuando termines: guardá tu trabajo (descargalo) y subilo acá.'), file, bUp, status);
+      box.append(steps, c.h('div', { style: 'display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center' }, bOpen, bTab, clock), note, frameBox, upRow,
+        c.h('div', { style: 'text-align:center;margin-top:10px;display:grid;gap:10px;justify-items:center' }, ok, st.upload === false ? null : skip));
+      if (st.upload === false) ok.removeAttribute('disabled');
+      return box;
     },
     trivia(st, c) {
       const box = c.h('div'), body = c.h('div'), prog = c.h('p.triviaprog'); let k = 0;
@@ -900,8 +1049,8 @@ const EV = (() => {
     function panel() {
       app.innerHTML = ''; app.append(topbar(ROOT + 'index.html', '← Inicio'));
       app.append(h('h1', {}, '🔧 Panel docente'));
-      const tabs = h('div.tabs', {}, [['claves', '🔑 Contraseñas'], ['equipos', '👥 Equipos'], ['respaldo', '💾 Respaldo']].map(([k, t]) => h('button.tab' + (k === tab ? '.sel' : ''), { on: { click: () => { tab = k; panel(); } } }, t)));
-      app.append(tabs); ({ claves, equipos, respaldo })[tab]();
+      const tabs = h('div.tabs', {}, [['claves', '🔑 Contraseñas'], ['equipos', '👥 Equipos'], ['dibujos', '🖼️ Dibujos'], ['respaldo', '💾 Respaldo']].map(([k, t]) => h('button.tab' + (k === tab ? '.sel' : ''), { on: { click: () => { tab = k; panel(); } } }, t)));
+      app.append(tabs); ({ claves, equipos, dibujos, respaldo })[tab]();
     }
     function claves() {
       const card = h('div.card.printable');
@@ -932,6 +1081,17 @@ const EV = (() => {
             h('button.btn.ghost', { on: { click: () => { if (confirm('¿Eliminar el equipo ' + t.name + '? No se puede deshacer.')) { delete S.teams[t.id]; if (S.active === t.id) S.active = null; save(true); panel(); } } } }, '🗑️ Eliminar'))));
       });
       app.append(box);
+    }
+    function dibujos() {
+      const on = !!CFG.driveUrl, res = h('p', { style: 'margin-top:10px;font-weight:600' }, ''), pend = h('p.sub', {}, '');
+      const upd = () => { pend.textContent = `Dibujos pendientes de enviar en esta compu: ${dqLoad().length}`; }; upd();
+      app.append(h('div.card', {}, h('h2', {}, '🖼️ Dibujos en Drive'),
+        h('p.sub', { style: 'margin:6px 0 14px' }, on ? '✅ Conectado. En la Clase 7 de cada nivel, al tocar “¡Terminé mi obra!” el dibujo se envía solo a la carpeta de Drive (un archivo por equipo y clase). Después se abre la carpeta y se imprime desde ahí.' : '⚠️ Todavía no está conectado. Seguí la guía drive/LEEME-DRIVE.md y pegá la dirección del Apps Script en assets/config.js (driveUrl).'),
+        h('div', { style: 'display:flex;gap:10px;flex-wrap:wrap' },
+          on ? h('button.btn', { on: { click: async () => { res.textContent = '⏳ Probando…'; try { await drivePost({ test: true }); res.textContent = '✅ ¡Funciona! La carpeta responde.'; } catch (e) { res.textContent = e.server ? '❌ El script respondió: ' + e.message + (e.message === 'token' ? ' (el driveToken de config.js no coincide con el del script)' : '') : '❌ No se pudo conectar. Revisá driveUrl y que la implementación sea para “Cualquier persona”.'; } } } }, '🔌 Probar conexión') : null,
+          on ? h('button.btn.ghost', { on: { click: async () => { res.textContent = '⏳ Reenviando…'; await driveFlush(); upd(); res.textContent = dqLoad().length ? '⚠️ Quedan pendientes (¿sin internet?).' : '✅ Todo enviado.'; } } }, '🔁 Reenviar pendientes') : null,
+          CFG.driveFolderUrl ? h('a.btn.ghost', { href: CFG.driveFolderUrl, target: '_blank', rel: 'noopener' }, '📂 Abrir carpeta de Drive') : null),
+        pend, res));
     }
     function respaldo() {
       const file = h('input', { type: 'file', accept: '.json,application/json', style: 'display:none' }), res = h('p', {}, '');

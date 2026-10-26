@@ -589,3 +589,15 @@ body.n3 .diploma .dipmp{font:700 1.1rem var(--font);color:var(--neon);margin-top
 }
 body.n3 .chip{white-space:nowrap}
 body.n3 .bubble:empty{display:none}
+
+/* ===== Editor de dibujo (Paint) ===== */
+.ptools{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.ptools .pill{padding:8px 12px;font-size:.95rem}
+.pill:disabled{opacity:.4;cursor:default}
+.psize{display:flex;align-items:center;gap:10px;justify-content:center;margin:6px 0}
+.psize input[type=range]{width:min(260px,55%)}
+.pdot{display:inline-block;border-radius:50%;background:var(--text);flex:none}
+input.pcolor{width:42px;height:38px;border:none;background:none;padding:0;cursor:pointer}
+.pstatus{text-align:center;font-weight:600;margin-top:8px;min-height:1.4em}
+.printsheet{display:none}
+@media print{body.printing>*:not(.printsheet){display:none!important}body.printing .printsheet{display:block;text-align:center}.printsheet img{max-width:100%;max-height:88vh;border:2px solid #000}}

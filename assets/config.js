@@ -7,6 +7,12 @@
    ============================================================ */
 window.EV_CONFIG = {
  "noLocks": false, /* true = todo abierto, sin contraseñas (para probar). Poné false para volver a usar los candados */
+ /* Dibujos en Drive (ver drive/LEEME-DRIVE.md). Dejá driveUrl vacío para desactivar el envío */
+ "driveUrl": "",
+ "driveToken": "",
+ "driveFolderUrl": "https://drive.google.com/drive/folders/17dkeb-cNfg2JTapyw9oeuRw85M49FgCV?usp=sharing",
+ /* true = al final de cada clase aparece el botón de Poki (sitio externo de juegos). Poné false para que no salgan de la propuesta */
+ "showPoki": true,
  "masterPin": "profe2026",
  "minutes": 15,
  "levels": {
