@@ -10,7 +10,8 @@
     'rescate-profe': { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' },
     'ciberdefensa':  { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' },
     'profe-runner':  { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' },
-    'come-bits':     { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' }
+    'laberinto-bits': { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' },
+    'cyber-quest':   { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' }
   };
   const G = {
     m: { el: 'el', al: 'al', del: 'del', lo: 'lo', profe: 'profe', rescatado: 'rescatado', liberado: 'liberado' },

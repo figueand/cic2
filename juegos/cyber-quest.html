@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cyber-Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0,#3b1a7a,#0b0620 70%) fixed;color:#fff;font-family:system-ui,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none}
+#app{max-width:760px;margin:0 auto;padding:12px 12px 40px}
+.px,h1,h2,h3,.b{font-family:'Press Start 2P',monospace}
+h1{font-size:clamp(1.3rem,6vw,2.1rem);color:#ffd54a;text-shadow:3px 3px 0 #c62828;line-height:1.4;margin:10px 0;text-align:center}
+h2{font-size:1.1rem;color:#ff5252;text-align:center;line-height:1.5}
+h3{font-size:.8rem;color:#a5f3fc;margin:16px 0 8px}
+.scr{display:none}.scr.on{display:block}
+.card{background:rgba(255,255,255,.08);border:3px solid rgba(255,255,255,.35);border-radius:14px;padding:12px;margin:10px 0}
+.ctr{text-align:center}.small{font-size:.85rem;color:#c4b5fd}.hl{color:#ffd54a;font-weight:700}
+.b{display:inline-block;font-size:.72rem;line-height:1.5;background:#e53935;color:#fff;border:3px solid #fff;border-radius:10px;padding:12px 16px;margin:5px;cursor:pointer;box-shadow:0 4px 0 #7f0000;text-decoration:none}
+.b:active{transform:translateY(3px);box-shadow:none}.b:disabled{opacity:.4;cursor:default}
+.b.gr{background:#2e7d32;box-shadow:0 4px 0 #123d14}.b.gy{background:#455a64;box-shadow:0 4px 0 #263238}
+#face,.av{border-radius:50%;object-fit:cover;border:4px solid #ffd54a;background:#222}
+#face{width:96px;height:96px;display:block;margin:8px auto}.av{width:56px;height:56px;flex:none}
+.hud{display:flex;align-items:center;gap:10px}.grow{flex:1;min-width:0}
+.bar{height:14px;background:#1f1147;border:2px solid #fff;border-radius:99px;overflow:hidden;margin:4px 0}
+.bar i{display:block;height:100%;transition:width .4s}
+.stat{font-family:'Press Start 2P',monospace;font-size:.8rem;color:#ffd54a}
+.route{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;margin:12px 0}
+.node{width:78px;text-align:center;font-size:1.8rem;background:rgba(255,255,255,.1);border:3px solid #7c3aed;border-radius:12px;padding:6px 2px}
+.node small{display:block;font-size:.62rem;line-height:1.2;color:#ddd6fe}
+.node.done{border-color:#22c55e}.node.cur{border-color:#ffd54a;animation:pl 1s infinite alternate}.node.lock{opacity:.5}
+.ln{width:10px;height:4px;background:#7c3aed}
+@keyframes pl{to{transform:scale(1.08)}}
+.shop{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.up{background:rgba(255,255,255,.1);border:3px solid #a78bfa;border-radius:12px;color:#fff;padding:10px;font:inherit;font-size:.92rem;cursor:pointer;text-align:left}
+.up b{color:#ffd54a}.up:disabled{opacity:.45;cursor:default}
+.note{background:#312e81;border:3px solid #ffd54a;border-radius:12px;padding:10px;margin:10px 0;font-size:.95rem}
+.fight{display:flex;gap:10px;align-items:center}
+.em{font-size:4.2rem;line-height:1;flex:none;width:96px;text-align:center}
+.hit{animation:sh .4s}@keyframes sh{20%{transform:translateX(-10px)}60%{transform:translateX(10px)}}
+.bub{position:relative;background:#fff;color:#111;border-radius:14px;padding:10px 12px;font-size:1rem;font-weight:600;margin:6px 0 4px 4px}
+.bub:before{content:'';position:absolute;left:-12px;top:16px;border:8px solid transparent;border-right-color:#fff;border-left:0}
+.tag{display:inline-block;font-size:.7rem;background:#7f1d1d;border-radius:6px;padding:2px 6px;margin-bottom:3px;color:#fecaca}
+.sks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.sk{background:linear-gradient(#4c1d95,#3b0764);border:3px solid #c4b5fd;border-radius:12px;color:#fff;padding:10px 6px;font:inherit;cursor:pointer;min-height:84px}
+.sk .e{font-size:1.8rem;display:block}.sk b{font-size:.92rem}.sk small{display:block;font-size:.72rem;color:#ddd6fe}
+.sk:active{transform:scale(.97)}.sk:disabled{cursor:default}
+.sk.good{border-color:#22c55e;background:#14532d}.sk.bad{border-color:#ef4444;background:#7f1d1d}
+.row2{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.row2 .sk{flex:1;min-height:56px;min-width:140px}
+.log{min-height:64px;background:rgba(0,0,0,.35);border-radius:12px;padding:10px;margin-top:10px;font-size:.95rem;line-height:1.4}
+.pips{letter-spacing:2px}
+.fl{position:fixed;z-index:50;font-family:'Press Start 2P',monospace;font-size:1rem;pointer-events:none;animation:up 1s forwards;text-shadow:2px 2px 0 #000}
+@keyframes up{to{transform:translateY(-50px);opacity:0}}
+#mute{position:fixed;top:8px;right:8px;z-index:20;background:#263238;color:#fff;border:2px solid #90a4ae;border-radius:8px;padding:6px 8px;cursor:pointer}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<button id="mute" aria-label="Sonido">🔊</button>
+<div id="app">
+  <section id="title" class="scr on ctr">
+    <h1>CYBER<br>QUEST</h1>
+    <img id="face" data-foto alt="{Profe} {Nombre}">
+    <div class="card">
+      <p>El <span class="hl">DR. BUG</span> lanzó amenazas por toda la red.</p>
+      <p>¡{El} <span class="hl">{PROFE} {NOMBRE}</span> necesita tu ayuda para vencerlas!</p>
+      <p class="small">Cada turno aparece una amenaza. Elegí la <b>defensa correcta</b> para pegarle al bicho. Si te equivocás, perdés vida. Juntá 🪙, subí de nivel y mejorá a {el} {profe} en la tienda.</p>
+      <p class="small">Teclas: 1-4 defensas · H adulto de confianza · S súper · Enter seguir</p>
+    </div>
+    <button class="b" id="go">▶ JUGAR</button><br>
+    <a class="b gy" href="index.html">← VOLVER A JUEGOS</a>
+  </section>
+  <section id="map" class="scr"></section>
+  <section id="battle" class="scr"></section>
+  <section id="end" class="scr ctr"></section>
+</div>
+<script src="profes.js"></script>
+<script>
+(()=>{
+const PF=EVPROFE.init('cyber-quest'),$=id=>document.getElementById(id),R=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
+/* ---- sonido ---- */
+let AC=null,mute=false;
+function beep(f,d=.1,t='square',v=.05){if(mute)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=t;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.stop(AC.currentTime+d)}catch(e){}}
+const sOK=()=>{beep(660,.08);setTimeout(()=>beep(880,.12),80)},sBAD=()=>beep(150,.25,'sawtooth',.07),sWIN=()=>[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.15),i*110));
+$('mute').onclick=()=>{mute=!mute;$('mute').textContent=mute?'🔇':'🔊'};
+/* ---- datos ---- */
+const SK={shield:{e:'🛡️',n:'Antivirus',d:'No abro archivos raros'},verify:{e:'🔍',n:'Verificar',d:'Pregunto y busco otra fuente'},block:{e:'🚫',n:'Bloquear y avisar',d:'Corto y le cuento a un adulto'},key:{e:'🔑',n:'Clave secreta',d:'No la comparto con nadie'}};
+const TH={
+ virus:{n:'Archivo con virus',c:'shield',m:['¡Descargá este juego gratis! (juego_gratis.exe)','Abrí este archivo adjunto, es una sorpresa 😈'],w:'Los archivos raros pueden traer virus: no se abren.'},
+ phish:{n:'Mensaje falso',c:'verify',m:['¡Ganaste un premio! Tocá el link YA o lo perdés.','Tu cuenta se bloquea hoy. Ingresá tus datos acá.'],w:'Si te apuran o te regalan cosas, puede ser un engaño: verificá primero.'},
+ fake:{n:'Noticia falsa',c:'verify',m:['¡URGENTE! Compartí con todos: ¡mañana no hay más internet!','Increíble: ¡todos los chicos deben hacer esto o...!'],w:'Antes de creer o compartir, buscá la noticia en otra fuente.'},
+ stranger:{n:'Extraño en el chat',c:'block',m:['Hola, soy nuevo. ¿Cuántos años tenés y dónde vivís?','Mandame una foto tuya y te regalo skins 🎁'],w:'A los extraños no se les cuenta nada: se bloquean y se avisa a un adulto.'},
+ troll:{n:'Troll',c:'block',m:['Sos malísimo, jajaja. ¡Todos se ríen de vos!','¡Sos un perdedor! Voy a escribirte todo el día.'],w:'Si alguien te trata mal en línea, no le contestes: bloqueá y contale a un adulto.'},
+ pass:{n:'Robo de clave',c:'key',m:['Soy del juego. Pasame tu contraseña para arreglar tu cuenta.','Tu amigo dice que le prestes tu clave, ¡dale!'],w:'La contraseña es secreta: solo la conocés vos (y un adulto de confianza).'}
+};
+const EN=[
+ {n:'Spam Pez',e:'🐟',hp:30,atk:8,th:['phish','phish','fake']},
+ {n:'Gusano Virus',e:'🪱',hp:40,atk:10,th:['virus','virus','phish']},
+ {n:'Troll Gritón',e:'👹',hp:50,atk:11,th:['troll','troll','pass']},
+ {n:'Falso Amigo',e:'🎭',hp:60,atk:13,th:['stranger','pass','troll']},
+ {n:'Fake News Gigante',e:'📰',hp:70,atk:14,th:['fake','phish','virus']},
+ {n:'DR. BUG',e:'🐞',hp:110,atk:16,th:['virus','phish','stranger','pass','fake','troll']}
+];
+const UP=[
+ {k:'hp',e:'❤️',t:'+15 de vida',c:30,f:()=>S.hpMax+=15},
+ {k:'atk',e:'💪',t:'+3 de ataque',c:40,f:()=>S.atk+=3},
+ {k:'heal',e:'🤝',t:'+1 adulto de confianza',c:25,f:()=>S.heal++},
+ {k:'en',e:'⚡',t:'+1 energía inicial (máx. 3)',c:35,f:()=>S.en0++,max:()=>S.en0>=3}
+];
+let S,B,hi=0;try{hi=+localStorage.getItem('rec_cyber-quest')||0}catch(e){}
+const fresh=()=>({lv:1,xp:0,coins:0,hpMax:60,atk:10,heal:2,en0:0,stage:0,correct:0,up:{},note:''});
+const show=id=>{['title','map','battle','end'].forEach(s=>$(s).classList.toggle('on',s===id));scrollTo(0,0)};
+/* ---- mapa y tienda ---- */
+function renderMap(){
+  const need=S.lv*30;
+  $('map').innerHTML=`<div class="card hud"><img class="av" src="${PF.foto}" alt=""><div class="grow"><b class="px" style="font-size:.7rem">${PF.nombre} · NIVEL ${S.lv}</b><div class="bar"><i style="width:${S.xp/need*100}%;background:#facc15"></i></div><small>XP ${S.xp}/${need}</small></div><div class="stat">🪙 ${S.coins}</div></div>
+  ${S.note?`<div class="note">${S.note}</div>`:''}
+  <div class="small ctr">❤️ ${S.hpMax} vida · 💪 ${S.atk} ataque · 🤝 ${S.heal} adultos · ⚡ ${S.en0} energía inicial</div>
+  <div class="route">${EN.map((e,i)=>`${i?'<span class="ln"></span>':''}<div class="node ${i<S.stage?'done':i===S.stage?'cur':'lock'}">${i<S.stage?'✅':i===S.stage?e.e:'🔒'}<small>${i<=S.stage?e.n:'???'}</small></div>`).join('')}</div>
+  <h3>🛒 TIENDA DE MEJORAS</h3><div class="shop">${UP.map(u=>{const c=u.c+10*(S.up[u.k]||0),off=S.coins<c||(u.max&&u.max());return`<button class="up" data-k="${u.k}" ${off?'disabled':''}>${u.e} ${u.t}<br><b>🪙 ${u.max&&u.max()?'MÁX':c}</b></button>`}).join('')}</div>
+  <div class="ctr" style="margin-top:14px"><button class="b gr" id="fight">⚔️ ¡COMBATIR!</button></div>`;
+  $('map').querySelectorAll('.up').forEach(b=>b.onclick=()=>{const u=UP.find(x=>x.k===b.dataset.k),c=u.c+10*(S.up[u.k]||0);if(S.coins<c)return;S.coins-=c;S.up[u.k]=(S.up[u.k]||0)+1;u.f();S.note='';sOK();renderMap()});
+  $('fight').onclick=startBattle;show('map');
+}
+/* ---- combate ---- */
+function startBattle(){
+  const en=EN[S.stage];B={en,ehp:en.hp,hp:S.hpMax,ep:S.en0,ch:S.heal,combo:0,busy:false,th:null,order:[]};
+  $('battle').innerHTML=`<div class="card fight"><div class="em" id="eE">${en.e}</div><div class="grow"><b class="px" style="font-size:.7rem">${en.n}</b><div class="bar"><i id="eB" style="background:#ef4444"></i></div><small id="eT"></small>
+   <div class="bub"><span class="tag" id="tg"></span><br><span id="ms"></span></div></div></div>
+  <div class="card hud" id="pC"><img class="av" src="${PF.foto}" alt=""><div class="grow"><b class="px" style="font-size:.65rem">${PF.nombre}</b><div class="bar"><i id="pB" style="background:#22c55e"></i></div><small id="pT"></small></div><div class="small ctr">⚡<br><span class="pips" id="pE"></span><br>🤝 <b id="pH"></b></div></div>
+  <div class="sks" id="sks"></div>
+  <div class="row2"><button class="sk" id="bH"><b>🤝 Hablar con un adulto</b><small>Curás 35% de vida, pero la amenaza te roza</small></button><button class="sk" id="bS"><b>⚡ SÚPER PROFE (3⚡)</b><small>Frena CUALQUIER amenaza y pega x3</small></button></div>
+  <div class="log" id="lg"></div><div class="ctr" id="nx"></div>`;
+  $('bH').onclick=()=>act('heal');$('bS').onclick=()=>act('super');show('battle');turn();
+}
+function turn(){
+  B.busy=false;B.th=R(B.en.th);const T=TH[B.th];
+  $('tg').textContent='⚠️ '+T.n;$('ms').textContent=R(T.m);$('nx').innerHTML='';$('lg').textContent='¿Qué defensa elegís?';
+  B.order=shuffle(Object.keys(SK));
+  $('sks').innerHTML=B.order.map((k,i)=>`<button class="sk" data-k="${k}"><span class="e">${SK[k].e}</span><b>${i+1}. ${SK[k].n}</b><small>${SK[k].d}</small></button>`).join('');
+  $('sks').querySelectorAll('.sk').forEach(b=>b.onclick=()=>act('skill',b.dataset.k));ui();
+}
+function ui(){
+  $('eB').style.width=Math.max(0,B.ehp/B.en.hp*100)+'%';$('eT').textContent=`${Math.max(0,B.ehp)}/${B.en.hp} PV`;
+  $('pB').style.width=Math.max(0,B.hp/S.hpMax*100)+'%';$('pT').textContent=`${Math.max(0,B.hp)}/${S.hpMax} PV${B.combo>1?' · 🔥 combo x'+B.combo:''}`;
+  $('pE').textContent='●'.repeat(B.ep)+'○'.repeat(5-B.ep);$('pH').textContent=B.ch;
+  $('bH').disabled=B.busy||B.ch<1||B.hp>=S.hpMax;$('bS').disabled=B.busy||B.ep<3;
+}
+function fl(el,txt,col){const r=el.getBoundingClientRect(),s=document.createElement('div');s.className='fl';s.style.cssText=`left:${r.left+r.width/2-20}px;top:${r.top+10}px;color:${col}`;s.textContent=txt;document.body.append(s);setTimeout(()=>s.remove(),1000)}
+function hit(el){el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit')}
+function act(kind,k){
+  if(!B||B.busy)return;B.busy=true;const T=TH[B.th],right=SK[T.c];let ok=false,html='';
+  $('sks').querySelectorAll('.sk').forEach(b=>{b.disabled=true;if(b.dataset.k===T.c)b.classList.add('good');else if(b.dataset.k===k)b.classList.add('bad')});
+  if(kind==='heal'){
+    B.ch--;const h=Math.round(S.hpMax*.35),d=Math.round(B.en.atk/2);B.hp=Math.min(S.hpMax,B.hp+h)-d;B.combo=0;
+    html=`🤝 Hablaste con un adulto de confianza: <b>+${h} vida</b>. La amenaza te rozó (-${d}). La defensa correcta era ${right.e} <b>${right.n}</b>.`;fl($('pC'),'+'+h,'#86efac');sOK();
+  }else if(kind==='super'||T.c===k){
+    ok=true;const sup=kind==='super',dmg=sup?S.atk*3:S.atk+Math.min(B.combo,4)*2;
+    if(sup)B.ep-=3;else B.ep=Math.min(5,B.ep+1);B.combo++;B.ehp-=dmg;S.correct++;
+    html=`${sup?'⚡ ¡SÚPER PROFE!':right.e+' ¡Bien!'} ${T.w} <b>(-${dmg} al bicho)</b>`;hit($('eE'));fl($('eE'),'-'+dmg,'#fde047');sOK();
+  }else{
+    B.hp-=B.en.atk;B.combo=0;html=`💥 ¡Ouch! Esa defensa no sirve acá (-${B.en.atk}). Era ${right.e} <b>${right.n}</b>: ${T.w}`;hit($('pC'));fl($('pC'),'-'+B.en.atk,'#fca5a5');sBAD();
+  }
+  $('lg').innerHTML=html;ui();
+  if(B.ehp<=0)setTimeout(win,1200);else if(B.hp<=0)setTimeout(lose,1200);
+  else $('nx').innerHTML='<button class="b" id="sg">▶ SEGUIR</button>',$('sg').onclick=turn,$('sg').focus();
+}
+function win(){
+  const i=S.stage,c=20+10*i,x=15+5*i;let msg=`🏆 ¡Venciste a ${EN[i].n}! <b>+${c} 🪙 · +${x} XP</b>`;
+  S.coins+=c;S.xp+=x;
+  while(S.xp>=S.lv*30){S.xp-=S.lv*30;S.lv++;S.hpMax+=10;S.atk+=1;msg+=`<br>🌟 ¡SUBISTE AL NIVEL ${S.lv}! (+10 vida, +1 ataque)`}
+  S.stage++;sWIN();
+  if(S.stage>=EN.length)return finish();
+  S.note=msg+'<br>Gastá tus monedas en la tienda y seguí.';renderMap();
+}
+function lose(){S.coins+=10;S.note='😅 ¡Casi! Los bichos son difíciles, pero cada error enseña algo. Te damos <b>+10 🪙</b>. ¡Mejorá en la tienda y probá de nuevo!';renderMap()}
+function finish(){
+  const score=S.correct*10+S.coins,nr=score>hi;if(nr){hi=score;try{localStorage.setItem('rec_cyber-quest',hi)}catch(e){}}
+  $('end').innerHTML=`<h1>¡VICTORIA!</h1><img class="av" style="width:96px;height:96px" src="${PF.foto}" alt=""><div class="card"><p>¡Vencieron al <span class="hl">DR. BUG</span> y salvaron la red! 🎉</p><p class="small">Reglas de oro: 🛡️ no abrir archivos raros · 🔍 verificar antes de creer · 🚫 bloquear y avisar a un adulto · 🔑 la clave no se comparte.</p><p>Puntaje: <span class="hl">${score}</span> · Nivel ${S.lv}</p>${nr?'<p class="hl">★ ¡NUEVO RÉCORD! ★</p>':''}<p class="small">Récord: ${hi}</p></div><button class="b gr" id="again">↻ JUGAR OTRA VEZ</button><br><a class="b gy" href="index.html">← VOLVER A JUEGOS</a>`;
+  $('again').onclick=begin;show('end');
+}
+function begin(){S=fresh();renderMap()}
+$('go').onclick=begin;
+addEventListener('keydown',e=>{
+  if(!$('battle').classList.contains('on')||!B)return;const k=e.key.toLowerCase();
+  if(k>='1'&&k<='4'&&!B.busy)act('skill',B.order[+k-1]);
+  else if(k==='h'&&!$('bH').disabled)act('heal');else if(k==='s'&&!$('bS').disabled)act('super');
+  else if((k==='enter'||k===' ')&&$('sg')){e.preventDefault();turn()}
+});
+})();
+</script>
+</body>
+</html>
