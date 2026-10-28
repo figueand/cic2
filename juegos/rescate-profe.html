@@ -425,7 +425,7 @@ function update(){
   movers.forEach(m=>{m.x+=m.sp*m.dir;if(m.x>m.bx){m.x=m.bx;m.dir=-1}if(m.x<m.ax){m.x=m.ax;m.dir=1}m.dx=m.sp*m.dir});
   // placas y puertas
   plates.forEach(pl=>{
-    const pressed=players.some(p=>p.on&&p.y+p.h>=pl.y-3&&p.y+p.h<=pl.y+pl.h+3&&p.x+p.w>pl.x&&p.x<pl.x+pl.w);
+    const pressed=players.some(p=>p.on&&Math.abs(p.y+p.h-pl.y)<3&&p.x+p.w>pl.x&&p.x<pl.x+pl.w);
     if(pressed){if(pl.t<=0)S.gate();pl.t=one?300:12}else if(pl.t>0)pl.t--;
   });
   gates.forEach(g=>{

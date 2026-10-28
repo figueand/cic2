@@ -7,4 +7,4 @@ Los 6 juegos leen a su protagonista del archivo `profes.js`. Para cambiarlo:
 
 Los textos se adaptan solos al género (el profe / la profe, al / a la, lo / la) y la página de Juegos muestra la foto de cada profe en su tarjeta.
 
-Juegos: `rescate-profe`, `ciberdefensa`, `profe-runner`, `laberinto-bits`, `cyber-quest`, `trivia-futbol`.
+Juegos: `rescate-profe`, `ciberdefensa`, `profe-runner`, `laberinto-bits`, `cyber-quest`, `aldea-digital`.

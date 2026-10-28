@@ -331,7 +331,7 @@ const EV = (() => {
         el.onclick = e => { e.preventDefault(); const go = () => { lvSel = l; view = teamsOf(l).length ? 'teams' : 'new'; render(); }; ok ? go() : openLevelLock(null, l, go); };
         levels.append(el);
       });
-      levels.append(h('a.lvl.l4', { href: 'juegos/index.html' }, h('span.em', {}, '🎮'), h('span', {}, h('b', {}, 'Juegos'), h('small', {}, '¡Rescatá al profe Cristian del malvado Dr. Bug!')), h('span.prog', {}, 'Jugar ▶')));
+      levels.append(h('a.lvl.l4', { href: 'juegos/index.html' }, h('span.em', {}, '🎮'), h('span', {}, h('b', {}, 'Juegos'), h('small', {}, '5 juegos para ayudar al profe contra el malvado Dr. Bug')), h('span.prog', {}, 'Jugar ▶')));
       app.append(levels, h('div.linksrow', {}, h('button.linkbtn', { on: { click: backupModal } }, '💾 Respaldo'), h('a.linkbtn', { href: 'docente.html' }, '🔧 Docentes')));
       if (!storageOK) app.append(h('p.warn', {}, '⚠️ Este navegador no permite guardar el progreso. Salgan de la ventana privada o usen el respaldo.'));
     }

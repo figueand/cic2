@@ -39,7 +39,7 @@ h3{font-size:.8rem;color:#a5f3fc;margin:16px 0 8px}
 .em{font-size:4.2rem;line-height:1;flex:none;width:96px;text-align:center}
 .hit{animation:sh .4s}@keyframes sh{20%{transform:translateX(-10px)}60%{transform:translateX(10px)}}
 .bub{position:relative;background:#fff;color:#111;border-radius:14px;padding:10px 12px;font-size:1rem;font-weight:600;margin:6px 0 4px 4px}
-.bub:before{content:'';position:absolute;left:-12px;top:16px;border:8px solid transparent;border-right-color:#fff;border-left:0}
+.bub:before{content:'';position:absolute;left:74%;top:-9px;border:9px solid transparent;border-top:0;border-bottom-color:#fff}
 .tag{display:inline-block;font-size:.7rem;background:#7f1d1d;border-radius:6px;padding:2px 6px;margin-bottom:3px;color:#fecaca}
 .sks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .sk{background:linear-gradient(#4c1d95,#3b0764);border:3px solid #c4b5fd;border-radius:12px;color:#fff;padding:10px 6px;font:inherit;cursor:pointer;min-height:84px}
@@ -52,6 +52,21 @@ h3{font-size:.8rem;color:#a5f3fc;margin:16px 0 8px}
 .fl{position:fixed;z-index:50;font-family:'Press Start 2P',monospace;font-size:1rem;pointer-events:none;animation:up 1s forwards;text-shadow:2px 2px 0 #000}
 @keyframes up{to{transform:translateY(-50px);opacity:0}}
 #mute{position:fixed;top:8px;right:8px;z-index:20;background:#263238;color:#fff;border:2px solid #90a4ae;border-radius:8px;padding:6px 8px;cursor:pointer}
+
+.arena{position:relative;height:270px;border:4px solid #fff;border-radius:16px;overflow:hidden;background:linear-gradient(#1e1b4b 0%,#6d28d9 55%,#f472b6 100%);box-shadow:0 6px 0 rgba(0,0,0,.4)}
+.arena .stars{position:absolute;inset:0;background:radial-gradient(2px 2px at 20% 20%,#fff,transparent),radial-gradient(1.5px 1.5px at 60% 12%,#fff,transparent),radial-gradient(2px 2px at 85% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 40% 40%,#fff,transparent),radial-gradient(2px 2px at 10% 55%,#fde68a,transparent),radial-gradient(1.5px 1.5px at 72% 48%,#fff,transparent);animation:tw 3s infinite alternate}
+.arena .moon{position:absolute;right:18%;top:14%;width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fffbe6,#fde68a);box-shadow:0 0 30px #fde68a}
+.arena .city{position:absolute;left:0;right:0;bottom:60px;height:120px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='110' viewBox='0 0 400 110' preserveAspectRatio='none'><path fill='%231e1b4b' d='M0 110V60h30V30h24v40h20V50h30V20h26v60h24V40h34V70h20V35h28V80h26V55h30V25h22v85z'/><g fill='%23fde68a'><rect x='38' y='38' width='5' height='5'/><rect x='100' y='28' width='5' height='5'/><rect x='214' y='46' width='5' height='5'/><rect x='330' y='34' width='5' height='5'/><rect x='156' y='58' width='5' height='5'/></g></svg>") repeat-x bottom;background-size:300px 100%;opacity:.9}
+.arena .floor{position:absolute;left:0;right:0;bottom:0;height:64px;border-top:3px solid #a78bfa;background:repeating-linear-gradient(90deg,rgba(167,139,250,.28) 0 2px,transparent 2px 46px),linear-gradient(#312e81,#1e1b4b)}
+.char{position:absolute;bottom:22px;width:120px;text-align:center}.char.me{left:7%}.char.foe{right:7%}
+.hero{width:98px;height:98px;border-radius:50%;object-fit:cover;border:4px solid #ffd54a;box-shadow:0 0 20px #fde047;animation:bob 2s ease-in-out infinite;background:#222}
+.sp{display:block;font-size:84px;line-height:1.05;filter:drop-shadow(0 0 14px #f472b6);animation:bob 1.6s ease-in-out infinite reverse}
+.sp.boss{font-size:110px;filter:drop-shadow(0 0 22px #ef4444)}
+.shd{width:86px;height:14px;margin:2px auto 0;border-radius:50%;background:rgba(0,0,0,.45)}
+.plate{position:absolute;top:8px;width:46%;max-width:290px;background:rgba(15,10,40,.8);border:2px solid #c4b5fd;border-radius:12px;padding:6px 10px;z-index:2}
+.plate.pl{left:8px}.plate.fo{right:8px;text-align:right}.plate .px{font-size:.6rem}.plate .bar{margin:5px 0;box-shadow:inset 0 3px 0 rgba(255,255,255,.25)}
+@keyframes bob{50%{transform:translateY(-8px)}}@keyframes tw{to{opacity:.5}}
+@media(max-width:480px){.arena{height:240px}.hero{width:76px;height:76px}.sp{font-size:64px}.sp.boss{font-size:84px}.char{width:90px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
@@ -65,10 +80,16 @@ h3{font-size:.8rem;color:#a5f3fc;margin:16px 0 8px}
       <p>El <span class="hl">DR. BUG</span> lanzó amenazas por toda la red.</p>
       <p>¡{El} <span class="hl">{PROFE} {NOMBRE}</span> necesita tu ayuda para vencerlas!</p>
       <p class="small">Cada turno aparece una amenaza. Elegí la <b>defensa correcta</b> para pegarle al bicho. Si te equivocás, perdés vida. Juntá 🪙, subí de nivel y mejorá a {el} {profe} en la tienda.</p>
-      <p class="small">Teclas: 1-4 defensas · H adulto de confianza · S súper · Enter seguir</p>
+      <p class="small">Teclas: 1-4 defensas · H adulto · I pista · S súper · Enter seguir</p>
     </div>
-    <button class="b" id="go">▶ JUGAR</button><br>
+    <button class="b" id="go">▶ JUGAR</button><button class="b gr" id="cont" style="display:none">⏩ CONTINUAR</button><br>
     <a class="b gy" href="index.html">← VOLVER A JUEGOS</a>
+  </section>
+  <section id="cls" class="scr ctr">
+    <h2 style="color:#ffd54a">ELEGÍ TU ESTILO</h2>
+    <p class="small">Cada estilo juega distinto. ¡Probá los tres!</p>
+    <div class="shop" style="grid-template-columns:1fr" id="clsL"></div>
+    <a class="b gy" href="#" id="clsB">← ATRÁS</a>
   </section>
   <section id="map" class="scr"></section>
   <section id="battle" class="scr"></section>
@@ -87,36 +108,43 @@ $('mute').onclick=()=>{mute=!mute;$('mute').textContent=mute?'🔇':'🔊'};
 /* ---- datos ---- */
 const SK={shield:{e:'🛡️',n:'Antivirus',d:'No abro archivos raros'},verify:{e:'🔍',n:'Verificar',d:'Pregunto y busco otra fuente'},block:{e:'🚫',n:'Bloquear y avisar',d:'Corto y le cuento a un adulto'},key:{e:'🔑',n:'Clave secreta',d:'No la comparto con nadie'}};
 const TH={
- virus:{n:'Archivo con virus',c:'shield',m:['¡Descargá este juego gratis! (juego_gratis.exe)','Abrí este archivo adjunto, es una sorpresa 😈'],w:'Los archivos raros pueden traer virus: no se abren.'},
- phish:{n:'Mensaje falso',c:'verify',m:['¡Ganaste un premio! Tocá el link YA o lo perdés.','Tu cuenta se bloquea hoy. Ingresá tus datos acá.'],w:'Si te apuran o te regalan cosas, puede ser un engaño: verificá primero.'},
- fake:{n:'Noticia falsa',c:'verify',m:['¡URGENTE! Compartí con todos: ¡mañana no hay más internet!','Increíble: ¡todos los chicos deben hacer esto o...!'],w:'Antes de creer o compartir, buscá la noticia en otra fuente.'},
- stranger:{n:'Extraño en el chat',c:'block',m:['Hola, soy nuevo. ¿Cuántos años tenés y dónde vivís?','Mandame una foto tuya y te regalo skins 🎁'],w:'A los extraños no se les cuenta nada: se bloquean y se avisa a un adulto.'},
- troll:{n:'Troll',c:'block',m:['Sos malísimo, jajaja. ¡Todos se ríen de vos!','¡Sos un perdedor! Voy a escribirte todo el día.'],w:'Si alguien te trata mal en línea, no le contestes: bloqueá y contale a un adulto.'},
- pass:{n:'Robo de clave',c:'key',m:['Soy del juego. Pasame tu contraseña para arreglar tu cuenta.','Tu amigo dice que le prestes tu clave, ¡dale!'],w:'La contraseña es secreta: solo la conocés vos (y un adulto de confianza).'}
+ virus:{n:'Archivo con virus',c:'shield',m:['¡Descargá este juego gratis! (juego_gratis.exe)','Abrí este archivo adjunto, es una sorpresa 😈','Instalá este “antivirus” gratis, ¡dale, rápido!'],w:'Los archivos raros pueden traer virus: no se abren.'},
+ phish:{n:'Mensaje falso',c:'verify',m:['¡Ganaste un premio! Tocá el link YA o lo perdés.','Tu cuenta se bloquea hoy. Ingresá tus datos acá.','Sos el visitante número 1.000.000: ¡reclamá tu regalo!'],w:'Si te apuran o te regalan cosas, puede ser un engaño: verificá primero.'},
+ fake:{n:'Noticia falsa',c:'verify',m:['¡URGENTE! Compartí con todos: ¡mañana no hay más internet!','Increíble: ¡todos los chicos deben hacer esto o...!','Un famoso dijo que esto es 100% real. ¡No lo verifiques!'],w:'Antes de creer o compartir, buscá la noticia en otra fuente.'},
+ stranger:{n:'Extraño en el chat',c:'block',m:['Hola, soy nuevo. ¿Cuántos años tenés y dónde vivís?','Mandame una foto tuya y te regalo skins 🎁','No le cuentes a nadie que hablamos, es nuestro secreto 🤫'],w:'A los extraños no se les cuenta nada: se bloquean y se avisa a un adulto.'},
+ troll:{n:'Troll',c:'block',m:['Sos malísimo, jajaja. ¡Todos se ríen de vos!','¡Sos un perdedor! Voy a escribirte todo el día.','Nadie te quiere en este juego, andate.'],w:'Si alguien te trata mal en línea, no le contestes: bloqueá y contale a un adulto.'},
+ pass:{n:'Robo de clave',c:'key',m:['Soy del juego. Pasame tu contraseña para arreglar tu cuenta.','Tu amigo dice que le prestes tu clave, ¡dale!','Para ganar premios, escribí tu usuario y tu clave acá.'],w:'La contraseña es secreta: solo la conocés vos (y un adulto de confianza).'}
 };
+const IC={virus:'🦠',phish:'🎣',fake:'📰',stranger:'👤',troll:'💬',pass:'🔓'};
 const EN=[
  {n:'Spam Pez',e:'🐟',hp:30,atk:8,th:['phish','phish','fake']},
  {n:'Gusano Virus',e:'🪱',hp:40,atk:10,th:['virus','virus','phish']},
  {n:'Troll Gritón',e:'👹',hp:50,atk:11,th:['troll','troll','pass']},
  {n:'Falso Amigo',e:'🎭',hp:60,atk:13,th:['stranger','pass','troll']},
  {n:'Fake News Gigante',e:'📰',hp:70,atk:14,th:['fake','phish','virus']},
- {n:'DR. BUG',e:'🐞',hp:110,atk:16,th:['virus','phish','stranger','pass','fake','troll']}
+ {n:'DR. BUG',e:'🐞',boss:1,hp:110,atk:16,th:['virus','phish','stranger','pass','fake','troll']}
 ];
 const UP=[
  {k:'hp',e:'❤️',t:'+15 de vida',c:30,f:()=>S.hpMax+=15},
  {k:'atk',e:'💪',t:'+3 de ataque',c:40,f:()=>S.atk+=3},
  {k:'heal',e:'🤝',t:'+1 adulto de confianza',c:25,f:()=>S.heal++},
- {k:'en',e:'⚡',t:'+1 energía inicial (máx. 3)',c:35,f:()=>S.en0++,max:()=>S.en0>=3}
+ {k:'en',e:'⚡',t:'+1 energía inicial (máx. 3)',c:35,f:()=>S.en0++,max:()=>S.en0>=3},
+ {k:'hint',e:'💡',t:'+1 pista por combate (máx. 3)',c:30,f:()=>S.hints++,max:()=>S.hints>=3}
 ];
 let S,B,hi=0;try{hi=+localStorage.getItem('rec_cyber-quest')||0}catch(e){}
-const fresh=()=>({lv:1,xp:0,coins:0,hpMax:60,atk:10,heal:2,en0:0,stage:0,correct:0,up:{},note:''});
-const show=id=>{['title','map','battle','end'].forEach(s=>$(s).classList.toggle('on',s===id));scrollTo(0,0)};
+const fresh=()=>({lv:1,xp:0,coins:0,hpMax:60,atk:10,heal:2,en0:0,hints:0,stage:0,correct:0,cls:'',up:{},note:''});
+const CLS={guardian:{e:'🛡️',n:'Guardián',d:'+20 de vida y +1 adulto de confianza. Aguanta más golpes.',f:s=>{s.hpMax+=20;s.heal++}},
+ detective:{e:'🔍',n:'Detective',d:'Empieza con 1 pista por combate (descarta 2 defensas malas).',f:s=>{s.hints=1}},
+ hacker:{e:'⚡',n:'Hacker',d:'+2 de energía inicial y +2 de ataque. Súper Profe desde el primer turno.',f:s=>{s.en0=2;s.atk+=2}}};
+const SAVE='cq_save',save=()=>{try{localStorage.setItem(SAVE,JSON.stringify(S))}catch(e){}},
+ load=()=>{try{const j=JSON.parse(localStorage.getItem(SAVE));return j&&j.stage!=null?Object.assign(fresh(),j):null}catch(e){return null}};
+const show=id=>{['title','cls','map','battle','end'].forEach(s=>$(s).classList.toggle('on',s===id));scrollTo(0,0)};
 /* ---- mapa y tienda ---- */
 function renderMap(){
-  const need=S.lv*30;
-  $('map').innerHTML=`<div class="card hud"><img class="av" src="${PF.foto}" alt=""><div class="grow"><b class="px" style="font-size:.7rem">${PF.nombre} · NIVEL ${S.lv}</b><div class="bar"><i style="width:${S.xp/need*100}%;background:#facc15"></i></div><small>XP ${S.xp}/${need}</small></div><div class="stat">🪙 ${S.coins}</div></div>
+  const need=S.lv*30;save();
+  $('map').innerHTML=`<div class="card hud"><img class="av" src="${PF.foto}" alt=""><div class="grow"><b class="px" style="font-size:.7rem">${PF.nombre} ${CLS[S.cls]?CLS[S.cls].e:''} · NIVEL ${S.lv}</b><div class="bar"><i style="width:${S.xp/need*100}%;background:#facc15"></i></div><small>XP ${S.xp}/${need}</small></div><div class="stat">🪙 ${S.coins}</div></div>
   ${S.note?`<div class="note">${S.note}</div>`:''}
-  <div class="small ctr">❤️ ${S.hpMax} vida · 💪 ${S.atk} ataque · 🤝 ${S.heal} adultos · ⚡ ${S.en0} energía inicial</div>
+  <div class="small ctr">❤️ ${S.hpMax} vida · 💪 ${S.atk} ataque · 🤝 ${S.heal} adultos · ⚡ ${S.en0} energía inicial · 💡 ${S.hints} pistas</div>
   <div class="route">${EN.map((e,i)=>`${i?'<span class="ln"></span>':''}<div class="node ${i<S.stage?'done':i===S.stage?'cur':'lock'}">${i<S.stage?'✅':i===S.stage?e.e:'🔒'}<small>${i<=S.stage?e.n:'???'}</small></div>`).join('')}</div>
   <h3>🛒 TIENDA DE MEJORAS</h3><div class="shop">${UP.map(u=>{const c=u.c+10*(S.up[u.k]||0),off=S.coins<c||(u.max&&u.max());return`<button class="up" data-k="${u.k}" ${off?'disabled':''}>${u.e} ${u.t}<br><b>🪙 ${u.max&&u.max()?'MÁX':c}</b></button>`}).join('')}</div>
   <div class="ctr" style="margin-top:14px"><button class="b gr" id="fight">⚔️ ¡COMBATIR!</button></div>`;
@@ -125,14 +153,17 @@ function renderMap(){
 }
 /* ---- combate ---- */
 function startBattle(){
-  const en=EN[S.stage];B={en,ehp:en.hp,hp:S.hpMax,ep:S.en0,ch:S.heal,combo:0,busy:false,th:null,order:[]};
-  $('battle').innerHTML=`<div class="card fight"><div class="em" id="eE">${en.e}</div><div class="grow"><b class="px" style="font-size:.7rem">${en.n}</b><div class="bar"><i id="eB" style="background:#ef4444"></i></div><small id="eT"></small>
-   <div class="bub"><span class="tag" id="tg"></span><br><span id="ms"></span></div></div></div>
-  <div class="card hud" id="pC"><img class="av" src="${PF.foto}" alt=""><div class="grow"><b class="px" style="font-size:.65rem">${PF.nombre}</b><div class="bar"><i id="pB" style="background:#22c55e"></i></div><small id="pT"></small></div><div class="small ctr">⚡<br><span class="pips" id="pE"></span><br>🤝 <b id="pH"></b></div></div>
+  const en=EN[S.stage];B={en,atk:en.atk,rage:false,hn:S.hints,ehp:en.hp,hp:S.hpMax,ep:S.en0,ch:S.heal,combo:0,busy:false,th:null,order:[]};
+  $('battle').innerHTML=`<div class="arena"><div class="stars"></div><div class="moon"></div><div class="city"></div><div class="floor"></div>
+   <div class="plate pl"><b class="px">${PF.nombre} ${CLS[S.cls]?CLS[S.cls].e:''}</b><div class="bar"><i id="pB" style="background:linear-gradient(#4ade80,#16a34a)"></i></div><small id="pT"></small><div class="small">⚡ <span class="pips" id="pE"></span> · 🤝 <b id="pH"></b></div></div>
+   <div class="plate fo"><b class="px">${en.n}</b><div class="bar"><i id="eB" style="background:linear-gradient(#f87171,#b91c1c)"></i></div><small id="eT"></small></div>
+   <div class="char me" id="pC"><img class="hero" src="${PF.foto}" alt=""><div class="shd"></div></div>
+   <div class="char foe" id="eE"><span class="sp${en.boss?' boss':''}">${en.e}</span><div class="shd"></div></div></div>
+  <div class="bub"><span class="tag" id="tg"></span><br><span id="ms"></span></div>
   <div class="sks" id="sks"></div>
-  <div class="row2"><button class="sk" id="bH"><b>🤝 Hablar con un adulto</b><small>Curás 35% de vida, pero la amenaza te roza</small></button><button class="sk" id="bS"><b>⚡ SÚPER PROFE (3⚡)</b><small>Frena CUALQUIER amenaza y pega x3</small></button></div>
-  <div class="log" id="lg"></div><div class="ctr" id="nx"></div>`;
-  $('bH').onclick=()=>act('heal');$('bS').onclick=()=>act('super');show('battle');turn();
+  <div class="row2"><button class="sk" id="bI"></button><button class="sk" id="bH"><b>🤝 Hablar con un adulto</b><small>Curás 35% de vida, pero la amenaza te roza</small></button><button class="sk" id="bS"><b>⚡ SÚPER PROFE (3⚡)</b><small>Frena CUALQUIER amenaza y pega x3</small></button></div>
+  <div class="log" id="lg" aria-live="polite"></div><div class="ctr" id="nx"></div>`;
+  $('bI').onclick=hint;$('bH').onclick=()=>act('heal');$('bS').onclick=()=>act('super');show('battle');turn();
 }
 function turn(){
   B.busy=false;B.th=R(B.en.th);const T=TH[B.th];
@@ -145,23 +176,32 @@ function ui(){
   $('eB').style.width=Math.max(0,B.ehp/B.en.hp*100)+'%';$('eT').textContent=`${Math.max(0,B.ehp)}/${B.en.hp} PV`;
   $('pB').style.width=Math.max(0,B.hp/S.hpMax*100)+'%';$('pT').textContent=`${Math.max(0,B.hp)}/${S.hpMax} PV${B.combo>1?' · 🔥 combo x'+B.combo:''}`;
   $('pE').textContent='●'.repeat(B.ep)+'○'.repeat(5-B.ep);$('pH').textContent=B.ch;
+  $('bI').innerHTML=`<b>💡 Pista (${B.hn})</b><small>Descarta 2 defensas incorrectas</small>`;$('bI').disabled=B.busy||B.hn<1||!!$('sks').querySelector('.bad');
   $('bH').disabled=B.busy||B.ch<1||B.hp>=S.hpMax;$('bS').disabled=B.busy||B.ep<3;
 }
+function hint(){
+  if(!B||B.busy||B.hn<1)return;const T=TH[B.th];B.hn--;
+  shuffle([...$('sks').querySelectorAll('.sk')].filter(b=>b.dataset.k!==T.c)).slice(0,2).forEach(b=>{b.disabled=true;b.classList.add('bad');b.style.opacity='.35'});
+  $('lg').textContent='💡 Descartaste dos defensas que no sirven. ¡Elegí entre las que quedan!';sOK();ui();
+}
+function shoot(a,b,t){const r1=a.getBoundingClientRect(),r2=b.getBoundingClientRect(),s=document.createElement('div');s.className='fl';s.style.cssText=`left:${r1.left+r1.width/2-16}px;top:${r1.top+r1.height/2-16}px;font-size:2rem;animation:none;text-shadow:none`;s.textContent=t;document.body.append(s);
+  if(s.animate)s.animate([{transform:'translate(0,0) scale(.8)'},{transform:`translate(${r2.left-r1.left}px,${r2.top-r1.top}px) scale(1.5) rotate(360deg)`}],{duration:420,easing:'ease-in'}).onfinish=()=>s.remove();else setTimeout(()=>s.remove(),420)}
 function fl(el,txt,col){const r=el.getBoundingClientRect(),s=document.createElement('div');s.className='fl';s.style.cssText=`left:${r.left+r.width/2-20}px;top:${r.top+10}px;color:${col}`;s.textContent=txt;document.body.append(s);setTimeout(()=>s.remove(),1000)}
 function hit(el){el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit')}
 function act(kind,k){
   if(!B||B.busy)return;B.busy=true;const T=TH[B.th],right=SK[T.c];let ok=false,html='';
   $('sks').querySelectorAll('.sk').forEach(b=>{b.disabled=true;if(b.dataset.k===T.c)b.classList.add('good');else if(b.dataset.k===k)b.classList.add('bad')});
   if(kind==='heal'){
-    B.ch--;const h=Math.round(S.hpMax*.35),d=Math.round(B.en.atk/2);B.hp=Math.min(S.hpMax,B.hp+h)-d;B.combo=0;
+    B.ch--;const h=Math.round(S.hpMax*.35),d=Math.round(B.atk/2);B.hp=Math.min(S.hpMax,B.hp+h)-d;B.combo=0;
     html=`🤝 Hablaste con un adulto de confianza: <b>+${h} vida</b>. La amenaza te rozó (-${d}). La defensa correcta era ${right.e} <b>${right.n}</b>.`;fl($('pC'),'+'+h,'#86efac');sOK();
   }else if(kind==='super'||T.c===k){
     ok=true;const sup=kind==='super',dmg=sup?S.atk*3:S.atk+Math.min(B.combo,4)*2;
     if(sup)B.ep-=3;else B.ep=Math.min(5,B.ep+1);B.combo++;B.ehp-=dmg;S.correct++;
-    html=`${sup?'⚡ ¡SÚPER PROFE!':right.e+' ¡Bien!'} ${T.w} <b>(-${dmg} al bicho)</b>`;hit($('eE'));fl($('eE'),'-'+dmg,'#fde047');sOK();
+    html=`${sup?'⚡ ¡SÚPER PROFE!':right.e+' ¡Bien!'} ${T.w} <b>(-${dmg} al bicho)</b>`;shoot($('pC'),$('eE'),sup?'⚡':right.e);setTimeout(()=>{hit($('eE'));fl($('eE'),'-'+dmg,'#fde047')},380);sOK();
   }else{
-    B.hp-=B.en.atk;B.combo=0;html=`💥 ¡Ouch! Esa defensa no sirve acá (-${B.en.atk}). Era ${right.e} <b>${right.n}</b>: ${T.w}`;hit($('pC'));fl($('pC'),'-'+B.en.atk,'#fca5a5');sBAD();
+    B.hp-=B.atk;B.combo=0;html=`💥 ¡Ouch! Esa defensa no sirve acá (-${B.atk}). Era ${right.e} <b>${right.n}</b>: ${T.w}`;shoot($('eE'),$('pC'),IC[B.th]);const da=B.atk;setTimeout(()=>{hit($('pC'));fl($('pC'),'-'+da,'#fca5a5')},380);sBAD();
   }
+  if(B.en.boss&&!B.rage&&B.ehp>0&&B.ehp<=B.en.hp/2){B.rage=true;B.atk+=5;html+='<br>😡 <b>¡El Dr. Bug se enfureció!</b> Ahora ataca más fuerte.';}
   $('lg').innerHTML=html;ui();
   if(B.ehp<=0)setTimeout(win,1200);else if(B.hp<=0)setTimeout(lose,1200);
   else $('nx').innerHTML='<button class="b" id="sg">▶ SEGUIR</button>',$('sg').onclick=turn,$('sg').focus();
@@ -178,14 +218,17 @@ function lose(){S.coins+=10;S.note='😅 ¡Casi! Los bichos son difíciles, pero
 function finish(){
   const score=S.correct*10+S.coins,nr=score>hi;if(nr){hi=score;try{localStorage.setItem('rec_cyber-quest',hi)}catch(e){}}
   $('end').innerHTML=`<h1>¡VICTORIA!</h1><img class="av" style="width:96px;height:96px" src="${PF.foto}" alt=""><div class="card"><p>¡Vencieron al <span class="hl">DR. BUG</span> y salvaron la red! 🎉</p><p class="small">Reglas de oro: 🛡️ no abrir archivos raros · 🔍 verificar antes de creer · 🚫 bloquear y avisar a un adulto · 🔑 la clave no se comparte.</p><p>Puntaje: <span class="hl">${score}</span> · Nivel ${S.lv}</p>${nr?'<p class="hl">★ ¡NUEVO RÉCORD! ★</p>':''}<p class="small">Récord: ${hi}</p></div><button class="b gr" id="again">↻ JUGAR OTRA VEZ</button><br><a class="b gy" href="index.html">← VOLVER A JUEGOS</a>`;
-  $('again').onclick=begin;show('end');
+  $('again').onclick=pickClass;try{localStorage.removeItem(SAVE)}catch(e){}show('end');
 }
-function begin(){S=fresh();renderMap()}
-$('go').onclick=begin;
+function begin(c){S=fresh();S.cls=c;CLS[c].f(S);renderMap()}
+function pickClass(){$('clsL').innerHTML=Object.keys(CLS).map(k=>`<button class="up" data-c="${k}"><span style="font-size:1.8rem">${CLS[k].e}</span> <b>${CLS[k].n}</b><br>${CLS[k].d}</button>`).join('');
+  $('clsL').querySelectorAll('.up').forEach(b=>b.onclick=()=>begin(b.dataset.c));show('cls')}
+$('go').onclick=pickClass;$('clsB').onclick=e=>{e.preventDefault();show('title')};
+const sv=load();if(sv&&sv.cls&&CLS[sv.cls]){$('cont').style.display='';$('cont').textContent=`⏩ CONTINUAR (combate ${sv.stage+1} de ${EN.length})`;$('cont').onclick=()=>{S=sv;renderMap()}}
 addEventListener('keydown',e=>{
   if(!$('battle').classList.contains('on')||!B)return;const k=e.key.toLowerCase();
   if(k>='1'&&k<='4'&&!B.busy)act('skill',B.order[+k-1]);
-  else if(k==='h'&&!$('bH').disabled)act('heal');else if(k==='s'&&!$('bS').disabled)act('super');
+  else if(k==='i'&&!$('bI').disabled)hint();else if(k==='h'&&!$('bH').disabled)act('heal');else if(k==='s'&&!$('bS').disabled)act('super');
   else if((k==='enter'||k===' ')&&$('sg')){e.preventDefault();turn()}
 });
 })();

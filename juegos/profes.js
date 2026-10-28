@@ -12,7 +12,7 @@
     'profe-runner':  { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' },
     'laberinto-bits': { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' },
     'cyber-quest':   { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' },
-    'trivia-futbol': { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' }
+    'aldea-digital': { nombre: 'Cristian', genero: 'm', foto: 'cristian.png' }
   };
   const G = {
     m: { el: 'el', al: 'al', del: 'del', lo: 'lo', profe: 'profe', rescatado: 'rescatado', liberado: 'liberado' },
